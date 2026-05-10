@@ -1,0 +1,18 @@
+.btn-group-toggle .btn.active {
+  background-color: #007bff !important;
+  color: white !important;
+  border-color: #007bff !important;
+}
+
+.btn-group-toggle .btn:hover {
+  opacity: 0.85;
+}
+
+.card {
+  margin-bottom: 20px;
+}
+
+.container-xl {
+  max-width: 1400px;
+}
+

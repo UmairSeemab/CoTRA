@@ -1,0 +1,172 @@
+---
+title: "CoTRA Bulk RNA-seq Report"
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    number_sections: true
+  pdf_document:
+    toc: true
+params:
+  bulk: NULL
+  de: NULL
+  annot: NULL
+  enrich: NULL
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+library(kableExtra)
+library(ggplot2)
+library(dplyr)
+library(enrichplot)
+library(clusterProfiler)
+library(fgsea)
+library(ReactomePA)
+
+bulk  <- params$bulk
+de    <- params$de
+annot <- params$annot
+enr   <- params$enrich
+```
+
+# 1. Overview
+
+This report summarizes bulk RNA-seq analysis performed in the CoTRA pipeline.
+
+---
+
+# 2. Sample Metadata
+
+```{r}
+if (!is.null(bulk) && !is.null(bulk$coldata)) {
+  kable(bulk$coldata, caption = "Sample metadata") %>% 
+    kable_styling(full_width = FALSE)
+} else {
+  "No metadata available."
+}
+```
+
+# 3. Counts Summary
+
+```{r}
+if (!is.null(bulk) && !is.null(bulk$counts)) {
+  df <- bulk$counts
+  kable(head(df, 20), caption = "First 20 genes in count matrix") %>% 
+    kable_styling(font_size = 9)
+} else {
+  "No count matrix available."
+}
+```
+
+# 4. Differential Expression Results
+
+```{r}
+if (!is.null(de)) {
+  de_top <- de %>% arrange(padj) %>% head(50)
+  kable(de_top, caption = "Top 50 differentially expressed genes") %>%
+    kable_styling(font_size = 9)
+} else {
+  "No DE results found."
+}
+```
+
+# 4.1 Volcano Plot
+
+```{r fig.width=7 fig.height=5}
+if (!is.null(de) && all(c("log2FoldChange","padj") %in% colnames(de))) {
+  p <- ggplot(de, aes(log2FoldChange, -log10(padj))) +
+    geom_point(alpha=0.5) +
+    geom_vline(xintercept=c(-1,1), linetype="dashed") +
+    geom_hline(yintercept=-log10(0.05), linetype="dashed") +
+    theme_minimal() +
+    ggtitle("Volcano Plot")
+  print(p)
+} else {
+  "Volcano cannot be generated."
+}
+```
+
+# 4.2 MA Plot
+
+```{r fig.width=7 fig.height=5}
+if (!is.null(de) && all(c("baseMean","log2FoldChange") %in% colnames(de))) {
+  p <- ggplot(de, aes(baseMean, log2FoldChange)) +
+    geom_point(alpha=0.5) +
+    scale_x_log10() +
+    theme_minimal() +
+    ggtitle("MA Plot")
+  print(p)
+} else {
+  "MA plot cannot be generated."
+}
+```
+
+# 5. Annotation Results
+
+```{r}
+if (!is.null(annot)) {
+  kable(head(annot, 20), caption = "Top annotated DE results") %>%
+    kable_styling(font_size = 9)
+} else {
+  "No annotation results available."
+}
+```
+
+# 6. GSEA Results
+
+```{r}
+if (!is.null(enr$gsea)) {
+  gsea_df <- enr$gsea()
+  kable(head(gsea_df, 20), caption = "Top GSEA pathways") %>%
+    kable_styling(font_size = 9)
+} else {
+  "No GSEA results available."
+}
+```
+
+# 7. Overrepresentation Analysis (GO / KEGG)
+
+```{r}
+if (!is.null(enr$ora)) {
+  all <- lapply(names(enr$ora), function(nm) {
+    df <- as.data.frame(enr$ora[[nm]])
+    df$Type <- nm
+    df
+  })
+  all <- do.call(rbind, all)
+  kable(head(all, 20), caption = "ORA results") %>%
+    kable_styling(font_size = 9)
+} else {
+  "No ORA results available."
+}
+```
+
+# 8. Reactome Pathway Analysis
+
+```{r}
+if (!is.null(enr$reactome)) {
+  df <- as.data.frame(enr$reactome())
+  kable(head(df, 20), caption = "Reactome enriched pathways") %>%
+    kable_styling(font_size = 9)
+} else {
+  "No Reactome data."
+}
+```
+
+# 9. Network Plot
+
+```{r fig.width=7 fig.height=5}
+if (!is.null(enr$ora)) {
+  obj <- enr$ora$GO_BP
+  if (!is.null(obj)) {
+    try(print(cnetplot(obj, showCategory = 10)), silent = TRUE)
+  }
+}
+```
+
+# 10. Session Info
+
+```{r}
+sessionInfo()
+```

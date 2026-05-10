@@ -1,0 +1,54 @@
+<svg width="1000" height="480" xmlns="http://www.w3.org/2000/svg">
+
+  <rect x="40" y="40" width="260" height="60" fill="#4C72B0" rx="6"/>
+  <text x="170" y="78" font-size="18" text-anchor="middle" fill="white">
+    Upload Data
+  </text>
+
+  <line x1="170" y1="100" x2="170" y2="140" stroke="#555" stroke-width="2" />
+
+  <rect x="40" y="140" width="260" height="60" fill="#55A868" rx="6"/>
+  <text x="170" y="178" font-size="18" text-anchor="middle" fill="white">
+    Quality Control
+  </text>
+
+  <line x1="170" y1="200" x2="170" y2="240" stroke="#555" stroke-width="2" />
+
+  <rect x="40" y="240" width="260" height="60" fill="#C44E52" rx="6"/>
+  <text x="170" y="278" font-size="18" text-anchor="middle" fill="white">
+    Normalization
+  </text>
+
+  <line x1="170" y1="300" x2="170" y2="340" stroke="#555" stroke-width="2" />
+
+  <rect x="40" y="340" width="260" height="60" fill="#8172B2" rx="6"/>
+  <text x="170" y="378" font-size="18" text-anchor="middle" fill="white">
+    Differential Analysis
+  </text>
+
+  <rect x="360" y="140" width="260" height="60" fill="#64B5CD" rx="6"/>
+  <text x="490" y="178" font-size="18" text-anchor="middle" fill="white">
+    scRNA Processing
+  </text>
+
+  <rect x="360" y="240" width="260" height="60" fill="#CC79A7" rx="6"/>
+  <text x="490" y="278" font-size="18" text-anchor="middle" fill="white">
+    Clustering
+  </text>
+
+  <rect x="360" y="340" width="260" height="60" fill="#DD8452" rx="6"/>
+  <text x="490" y="378" font-size="18" text-anchor="middle" fill="white">
+    Trajectory / Velocity
+  </text>
+
+  <rect x="680" y="240" width="260" height="60" fill="#937860" rx="6"/>
+  <text x="810" y="278" font-size="18" text-anchor="middle" fill="white">
+    Pathway Scores
+  </text>
+
+  <rect x="680" y="340" width="260" height="60" fill="#B2B2B2" rx="6"/>
+  <text x="810" y="378" font-size="18" text-anchor="middle" fill="white">
+    Reporting
+  </text>
+
+</svg>

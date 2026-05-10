@@ -1,0 +1,13 @@
+/* Simple dark mode for CoTRA */
+.cotra-dark {
+  background-color: #101418 !important;
+  color: #e6e6e6 !important;
+}
+.cotra-dark .card {
+  background-color: #1a1f24 !important;
+  color: #e6e6e6 !important;
+}
+.cotra-dark .main-header, .cotra-dark .main-sidebar {
+  background-color: #151a1f !important;
+}
+.cotra-dark a { color: #9ecbff !important; }
