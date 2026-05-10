@@ -58,6 +58,108 @@ CoTRA is an interactive Shiny based platform for bulk RNA-seq and single cell RN
 
 # Installation
 
+# Easy Package Installation
+
+After downloading or cloning CoTRA, install all required packages using the platform specific installer files included in the project.
+
+The installer automatically:
+- checks existing packages
+- skips already installed packages
+- installs missing dependencies
+- minimizes user interaction
+
+The following files are included:
+
+```text
+install_CoTRA_Linux.sh
+install_CoTRA_MacOS.command
+install_CoTRA_window.bat
+install_cotra_packages.R
+```
+
+---
+
+# Windows Installation
+
+1. Install R:
+https://cran.r-project.org/bin/windows/base/
+
+2. Download or clone CoTRA.
+
+3. Open the CoTRA folder.
+
+4. Double click:
+
+```text
+install_CoTRA_window.bat
+```
+
+The installer will automatically install all required packages.
+
+---
+
+# macOS Installation
+
+1. Install R:
+https://cran.r-project.org/bin/macosx/
+
+2. Download or clone CoTRA.
+
+3. Open Terminal once and make the installer executable:
+
+```bash
+chmod +x install_CoTRA_MacOS.command
+```
+
+4. Double click:
+
+```text
+install_CoTRA_MacOS.command
+```
+
+The installer will automatically install all required packages.
+
+---
+
+# Linux/Ubuntu Installation
+
+1. Install R:
+
+```bash
+sudo apt update
+sudo apt install r-base
+```
+
+2. Download or clone CoTRA.
+
+3. Open terminal inside the CoTRA folder.
+
+4. Make installer executable:
+
+```bash
+chmod +x install_CoTRA_Linux.sh
+```
+
+5. Run installer:
+
+```bash
+./install_CoTRA_Linux.sh
+```
+
+The installer will automatically install all required packages.
+
+---
+
+# Manual Installation Alternative
+
+If needed, packages can also be installed manually from R:
+
+```r
+source("install_cotra_packages.R")
+```
+
+
+
 ## Option 1. Standard Installation
 
 ### Step 1. Install R
