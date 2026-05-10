@@ -249,9 +249,11 @@ CMD ["R", "-e", "shiny::runApp('/srv/shiny-server/CoTRA', host='0.0.0.0', port=3
 ```text
 CoTRA/
 ├── app.R
-├── functions.R
-├── install_cotra_packages.R
+├── global.R
+├── server.R
+├── ui.R
 ├── modules/
+├── CoTRA_installer/
 ├── data/
 ├── outputs/
 ├── www/
