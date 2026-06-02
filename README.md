@@ -35,7 +35,6 @@ CoTRA is an interactive Shiny based platform for bulk RNA-seq and single cell RN
 - Pathway activity analysis
 - Trajectory analysis
 - Cell communication analysis
-- RNA velocity support
 - Interactive visualization
 - Session export and restoration
 
