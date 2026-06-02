@@ -5,6 +5,7 @@
 # Supports Human, Mouse, Rat
 # Uses EnsDb packages for offline genomic annotation
 # User can choose all tested genes or differentially expressed genes
+# Expandable interpretation sections added
 # ==========================================================
 
 mod_bulk_annotation_ui <- function(id) {
@@ -93,6 +94,8 @@ mod_bulk_annotation_ui <- function(id) {
     hr(),
     
     DT::DTOutput(ns("annot_table")),
+    br(),
+    uiOutput(ns("table_interpretation_ui")),
     hr(),
     
     tabsetPanel(
@@ -102,31 +105,42 @@ mod_bulk_annotation_ui <- function(id) {
         downloadButton(ns("download_type_pdf"), "Download PDF"),
         downloadButton(ns("download_type_svg"), "Download SVG"),
         br(), br(),
-        plotly::plotlyOutput(ns("plot_type"), height = "520px")
+        plotly::plotlyOutput(ns("plot_type"), height = "520px"),
+        br(),
+        uiOutput(ns("type_interpretation_ui"))
       ),
+      
       tabPanel(
         "Chromosome Distribution",
         br(),
         downloadButton(ns("download_chr_pdf"), "Download PDF"),
         downloadButton(ns("download_chr_svg"), "Download SVG"),
         br(), br(),
-        plotly::plotlyOutput(ns("plot_chr"), height = "520px")
+        plotly::plotlyOutput(ns("plot_chr"), height = "520px"),
+        br(),
+        uiOutput(ns("chr_interpretation_ui"))
       ),
+      
       tabPanel(
         "Gene Length",
         br(),
         downloadButton(ns("download_len_pdf"), "Download PDF"),
         downloadButton(ns("download_len_svg"), "Download SVG"),
         br(), br(),
-        plotly::plotlyOutput(ns("plot_len"), height = "520px")
+        plotly::plotlyOutput(ns("plot_len"), height = "520px"),
+        br(),
+        uiOutput(ns("len_interpretation_ui"))
       ),
+      
       tabPanel(
         "Genomic Location",
         br(),
         downloadButton(ns("download_ideo_pdf"), "Download PDF"),
         downloadButton(ns("download_ideo_svg"), "Download SVG"),
         br(), br(),
-        plotly::plotlyOutput(ns("plot_ideo"), height = "520px")
+        plotly::plotlyOutput(ns("plot_ideo"), height = "520px"),
+        br(),
+        uiOutput(ns("ideo_interpretation_ui"))
       )
     )
   )
@@ -135,10 +149,213 @@ mod_bulk_annotation_ui <- function(id) {
 mod_bulk_annotation_server <- function(id, de_results) {
   moduleServer(id, function(input, output, session) {
     
+    ns <- session$ns
+    
     rv <- reactiveValues(annot = NULL)
     
     observeEvent(input$help_toggle, {
       shinyjs::toggle(id = "help_box", anim = TRUE)
+    })
+    
+    observeEvent(input$type_interp_toggle, {
+      shinyjs::toggle(id = "type_interp_body", anim = TRUE)
+    })
+    
+    observeEvent(input$chr_interp_toggle, {
+      shinyjs::toggle(id = "chr_interp_body", anim = TRUE)
+    })
+    
+    observeEvent(input$len_interp_toggle, {
+      shinyjs::toggle(id = "len_interp_body", anim = TRUE)
+    })
+    
+    observeEvent(input$ideo_interp_toggle, {
+      shinyjs::toggle(id = "ideo_interp_body", anim = TRUE)
+    })
+    
+    observeEvent(input$table_interp_toggle, {
+      shinyjs::toggle(id = "table_interp_body", anim = TRUE)
+    })
+    
+    interpretation_box <- function(title, body_id, button_id, content) {
+      tags$div(
+        style = "border:1px solid #cfd8dc; border-radius:4px; margin-top:10px; background:white; overflow:hidden; box-shadow:0 1px 2px rgba(0,0,0,0.08);",
+        
+        tags$div(
+          style = "background:#1aa3b0; color:white; padding:9px 14px; display:flex; align-items:center; justify-content:space-between;",
+          
+          tags$span(
+            icon("info-circle"),
+            title
+          ),
+          
+          actionButton(
+            ns(button_id),
+            label = NULL,
+            icon = icon("minus"),
+            class = "btn btn-xs",
+            style = "background:#147f8a; color:white; border:1px solid #0f6c75; padding:2px 8px;"
+          )
+        ),
+        
+        div(
+          id = ns(body_id),
+          style = "padding:16px 18px; color:#111; background:white;",
+          content
+        )
+      )
+    }
+    
+    output$table_interpretation_ui <- renderUI({
+      req(rv$annot)
+      
+      interpretation_box(
+        title = "Interpretation: annotation table",
+        body_id = "table_interp_body",
+        button_id = "table_interp_toggle",
+        content = tagList(
+          h4("How to interpret the annotation table"),
+          p("This table links each input gene to genomic annotation information."),
+          
+          h4("Important columns"),
+          tags$ul(
+            tags$li("gene_symbol shows the mapped gene symbol."),
+            tags$li("ensembl_gene_id shows the Ensembl gene identifier."),
+            tags$li("chromosome, start_position, and end_position show genomic location."),
+            tags$li("strand shows whether the gene is located on the positive or negative strand."),
+            tags$li("gene_biotype describes the gene class, such as protein coding or lncRNA."),
+            tags$li("annotation_status shows whether the gene was mapped or unmapped.")
+          ),
+          
+          h4("Main caution"),
+          p("Unmapped genes may result from outdated gene names, species mismatch, or different gene ID formats."),
+          
+          h4("Recommended next step"),
+          p("Check unmapped genes before using the annotation table for enrichment or reporting.")
+        )
+      )
+    })
+    
+    output$type_interpretation_ui <- renderUI({
+      req(rv$annot)
+      
+      interpretation_box(
+        title = "Interpretation: gene biotype",
+        body_id = "type_interp_body",
+        button_id = "type_interp_toggle",
+        content = tagList(
+          h4("How to interpret gene biotype"),
+          p("This plot shows the types of genes present in the annotated gene set."),
+          
+          h4("What to look for"),
+          tags$ul(
+            tags$li("Protein coding genes usually represent functional gene products."),
+            tags$li("lncRNA, pseudogene, and other biotypes may indicate regulatory or noncoding signals."),
+            tags$li("A high unmapped or unusual biotype fraction should be checked.")
+          ),
+          
+          h4("Good result"),
+          p("Most genes are mapped and classified into expected biotype categories."),
+          
+          h4("Main caution"),
+          p("Biotype distribution depends on the selected gene set. Differentially expressed genes may show a different pattern than all tested genes."),
+          
+          h4("Recommended next step"),
+          p("Use this plot to understand the composition of genes before downstream enrichment.")
+        )
+      )
+    })
+    
+    output$chr_interpretation_ui <- renderUI({
+      req(rv$annot)
+      
+      interpretation_box(
+        title = "Interpretation: chromosome distribution",
+        body_id = "chr_interp_body",
+        button_id = "chr_interp_toggle",
+        content = tagList(
+          h4("How to interpret chromosome distribution"),
+          p("This plot shows how annotated genes are distributed across chromosomes."),
+          
+          h4("What to look for"),
+          tags$ul(
+            tags$li("Each bar represents one chromosome."),
+            tags$li("The bar height shows the number of annotated genes on that chromosome."),
+            tags$li("A broad distribution suggests genes come from many genomic regions."),
+            tags$li("A strong peak on one chromosome may indicate locus enrichment or annotation bias.")
+          ),
+          
+          h4("Good result"),
+          p("Genes are distributed across expected chromosomes without excessive unmapped values."),
+          
+          h4("Main caution"),
+          p("Chromosome enrichment alone does not prove biological regulation. It should be interpreted with pathway and gene-level evidence."),
+          
+          h4("Recommended next step"),
+          p("Inspect chromosomes with unusually high gene counts and check whether key genes cluster in specific regions.")
+        )
+      )
+    })
+    
+    output$len_interpretation_ui <- renderUI({
+      req(rv$annot)
+      
+      interpretation_box(
+        title = "Interpretation: gene length",
+        body_id = "len_interp_body",
+        button_id = "len_interp_toggle",
+        content = tagList(
+          h4("How to interpret gene length distribution"),
+          p("This histogram shows the distribution of gene lengths in the annotated gene set."),
+          
+          h4("What to look for"),
+          tags$ul(
+            tags$li("Most genes usually fall within a broad range of lengths."),
+            tags$li("Very long genes may influence read counting and differential expression detection."),
+            tags$li("Very short genes can have limited read coverage.")
+          ),
+          
+          h4("Good result"),
+          p("The distribution shows a reasonable spread of gene lengths without extreme dominance by very short or very long genes."),
+          
+          h4("Main caution"),
+          p("Gene length can affect RNA-seq read counts. Use caution when comparing raw counts across genes."),
+          
+          h4("Recommended next step"),
+          p("Use normalized expression and enrichment methods that account for possible gene length bias when needed.")
+        )
+      )
+    })
+    
+    output$ideo_interpretation_ui <- renderUI({
+      req(rv$annot)
+      
+      interpretation_box(
+        title = "Interpretation: genomic location",
+        body_id = "ideo_interp_body",
+        button_id = "ideo_interp_toggle",
+        content = tagList(
+          h4("How to interpret genomic location"),
+          p("This plot shows where annotated genes are located across chromosomes."),
+          
+          h4("What to look for"),
+          tags$ul(
+            tags$li("Each point represents one annotated gene."),
+            tags$li("The x-axis shows chromosome."),
+            tags$li("The y-axis shows genomic start position."),
+            tags$li("Clusters of points may indicate genes located in nearby genomic regions.")
+          ),
+          
+          h4("Good result"),
+          p("Genes are mapped to expected chromosomes and genomic positions."),
+          
+          h4("Main caution"),
+          p("Nearby genomic location does not automatically mean shared regulation. Confirm with biological context or pathway analysis."),
+          
+          h4("Recommended next step"),
+          p("Use this plot to identify genomic clustering and inspect genes of interest.")
+        )
+      )
     })
     
     get_ensdb <- function(species) {
@@ -281,6 +498,7 @@ mod_bulk_annotation_server <- function(id, de_results) {
       )
       
       missing_genes <- setdiff(input_genes, ann$input_gene)
+      
       if (length(missing_genes) > 0) {
         ann_missing <- data.frame(
           input_gene = missing_genes,
@@ -295,6 +513,7 @@ mod_bulk_annotation_server <- function(id, de_results) {
           gene_length = NA_real_,
           stringsAsFactors = FALSE
         )
+        
         ann <- dplyr::bind_rows(ann, ann_missing)
       }
       
@@ -321,6 +540,7 @@ mod_bulk_annotation_server <- function(id, de_results) {
         dplyr::left_join(ann, by = c("gene_clean" = "input_gene"))
       
       chr_levels <- get_chr_levels(species)
+      
       out$chromosome <- gsub("^chr", "", as.character(out$chromosome), ignore.case = TRUE)
       out$chromosome[out$chromosome %in% c("M", "MT")] <- "MT"
       out$chromosome[!(out$chromosome %in% chr_levels)] <- NA
@@ -360,6 +580,7 @@ mod_bulk_annotation_server <- function(id, de_results) {
         }
         
         sig_n <- sum(de_df$significant %in% TRUE, na.rm = TRUE)
+        
         if (sig_n == 0) {
           rv$annot <- NULL
           output$status <- renderText("No significant DE genes available for annotation under the current DE thresholds.")
@@ -401,6 +622,7 @@ mod_bulk_annotation_server <- function(id, de_results) {
     
     output$annot_table <- DT::renderDT({
       req(rv$annot)
+      
       DT::datatable(
         rv$annot,
         rownames = FALSE,
@@ -410,6 +632,7 @@ mod_bulk_annotation_server <- function(id, de_results) {
     
     plot_data_type <- reactive({
       req(rv$annot)
+      
       rv$annot %>%
         dplyr::filter(!is.na(gene_biotype), nzchar(gene_biotype)) %>%
         dplyr::count(gene_biotype, name = "n") %>%
@@ -418,6 +641,7 @@ mod_bulk_annotation_server <- function(id, de_results) {
     
     plot_data_chr <- reactive({
       req(rv$annot)
+      
       rv$annot %>%
         dplyr::filter(!is.na(chromosome)) %>%
         dplyr::count(chromosome, name = "n")
@@ -425,18 +649,21 @@ mod_bulk_annotation_server <- function(id, de_results) {
     
     plot_data_len <- reactive({
       req(rv$annot)
+      
       rv$annot %>%
         dplyr::filter(!is.na(gene_length), is.finite(gene_length), gene_length > 0)
     })
     
     plot_data_ideo <- reactive({
       req(rv$annot)
+      
       rv$annot %>%
         dplyr::filter(!is.na(chromosome), !is.na(start_position))
     })
     
     output$plot_type <- plotly::renderPlotly({
       df <- plot_data_type()
+      
       validate(need(nrow(df) > 0, "No gene biotype data available."))
       
       plotly::plot_ly(
@@ -451,6 +678,7 @@ mod_bulk_annotation_server <- function(id, de_results) {
     
     output$plot_chr <- plotly::renderPlotly({
       df <- plot_data_chr()
+      
       validate(need(nrow(df) > 0, "No chromosome data available."))
       
       plotly::plot_ly(
@@ -471,6 +699,7 @@ mod_bulk_annotation_server <- function(id, de_results) {
     
     output$plot_len <- plotly::renderPlotly({
       df <- plot_data_len()
+      
       validate(need(nrow(df) > 0, "No gene length data available."))
       
       plotly::plot_ly(
@@ -487,6 +716,7 @@ mod_bulk_annotation_server <- function(id, de_results) {
     
     output$plot_ideo <- plotly::renderPlotly({
       df <- plot_data_ideo()
+      
       validate(need(nrow(df) > 0, "No genomic location data available."))
       
       plotly::plot_ly(
@@ -516,8 +746,10 @@ mod_bulk_annotation_server <- function(id, de_results) {
           yaxis = list(title = "Start position")
         )
     })
+    
     plot_type_static <- function() {
       df <- plot_data_type()
+      
       validate(need(nrow(df) > 0, "No gene biotype data available."))
       
       ggplot2::ggplot(df, ggplot2::aes(x = "", y = n, fill = gene_biotype)) +
@@ -529,6 +761,7 @@ mod_bulk_annotation_server <- function(id, de_results) {
     
     plot_chr_static <- function() {
       df <- plot_data_chr()
+      
       validate(need(nrow(df) > 0, "No chromosome data available."))
       
       ggplot2::ggplot(df, ggplot2::aes(x = chromosome, y = n)) +
@@ -543,6 +776,7 @@ mod_bulk_annotation_server <- function(id, de_results) {
     
     plot_len_static <- function() {
       df <- plot_data_len()
+      
       validate(need(nrow(df) > 0, "No gene length data available."))
       
       ggplot2::ggplot(df, ggplot2::aes(x = gene_length)) +
@@ -557,6 +791,7 @@ mod_bulk_annotation_server <- function(id, de_results) {
     
     plot_ideo_static <- function() {
       df <- plot_data_ideo()
+      
       validate(need(nrow(df) > 0, "No genomic location data available."))
       
       ggplot2::ggplot(df, ggplot2::aes(x = chromosome, y = start_position)) +
@@ -584,44 +819,77 @@ mod_bulk_annotation_server <- function(id, de_results) {
     }
     
     output$download_type_pdf <- downloadHandler(
-      filename = function() "gene_biotype_distribution.pdf",
-      content = function(file) save_static_plot(plot_type_static, file, "pdf")
+      filename = function() {
+        "gene_biotype_distribution.pdf"
+      },
+      content = function(file) {
+        save_static_plot(plot_type_static, file, "pdf")
+      }
     )
     
     output$download_type_svg <- downloadHandler(
-      filename = function() "gene_biotype_distribution.svg",
-      content = function(file) save_static_plot(plot_type_static, file, "svg")
+      filename = function() {
+        "gene_biotype_distribution.svg"
+      },
+      content = function(file) {
+        save_static_plot(plot_type_static, file, "svg")
+      }
     )
     
     output$download_chr_pdf <- downloadHandler(
-      filename = function() "chromosome_distribution.pdf",
-      content = function(file) save_static_plot(plot_chr_static, file, "pdf")
+      filename = function() {
+        "chromosome_distribution.pdf"
+      },
+      content = function(file) {
+        save_static_plot(plot_chr_static, file, "pdf")
+      }
     )
     
     output$download_chr_svg <- downloadHandler(
-      filename = function() "chromosome_distribution.svg",
-      content = function(file) save_static_plot(plot_chr_static, file, "svg")
+      filename = function() {
+        "chromosome_distribution.svg"
+      },
+      content = function(file) {
+        save_static_plot(plot_chr_static, file, "svg")
+      }
     )
     
     output$download_len_pdf <- downloadHandler(
-      filename = function() "gene_length_distribution.pdf",
-      content = function(file) save_static_plot(plot_len_static, file, "pdf")
+      filename = function() {
+        "gene_length_distribution.pdf"
+      },
+      content = function(file) {
+        save_static_plot(plot_len_static, file, "pdf")
+      }
     )
     
     output$download_len_svg <- downloadHandler(
-      filename = function() "gene_length_distribution.svg",
-      content = function(file) save_static_plot(plot_len_static, file, "svg")
+      filename = function() {
+        "gene_length_distribution.svg"
+      },
+      content = function(file) {
+        save_static_plot(plot_len_static, file, "svg")
+      }
     )
     
     output$download_ideo_pdf <- downloadHandler(
-      filename = function() "genomic_location.pdf",
-      content = function(file) save_static_plot(plot_ideo_static, file, "pdf")
+      filename = function() {
+        "genomic_location.pdf"
+      },
+      content = function(file) {
+        save_static_plot(plot_ideo_static, file, "pdf")
+      }
     )
     
     output$download_ideo_svg <- downloadHandler(
-      filename = function() "genomic_location.svg",
-      content = function(file) save_static_plot(plot_ideo_static, file, "svg")
+      filename = function() {
+        "genomic_location.svg"
+      },
+      content = function(file) {
+        save_static_plot(plot_ideo_static, file, "svg")
+      }
     )
+    
     output$download_table <- downloadHandler(
       filename = function() {
         paste0("gene_annotation_", input$gene_set, "_", input$species, ".csv")

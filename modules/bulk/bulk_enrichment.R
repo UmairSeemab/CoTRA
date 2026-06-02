@@ -6,6 +6,7 @@
 # - Network plots using cnetplot and emapplot
 # - CSV/XLSX table downloads
 # - PDF and SVG plot downloads
+# - Expandable interpretation panels
 
 mod_bulk_enrich_ui <- function(id) {
   ns <- NS(id)
@@ -73,7 +74,10 @@ mod_bulk_enrich_ui <- function(id) {
         
         fluidRow(
           column(12, verbatimTextOutput(ns("mapping_qc")))
-        )
+        ),
+        
+        br(),
+        uiOutput(ns("mapping_interpretation_ui"))
       )
     ),
     
@@ -122,7 +126,9 @@ mod_bulk_enrich_ui <- function(id) {
             br(),
             shinycssloaders::withSpinner(DT::DTOutput(ns("ora_selected_table"))),
             br(),
-            shinycssloaders::withSpinner(plotly::plotlyOutput(ns("ora_plot"), height = "650px"))
+            shinycssloaders::withSpinner(plotly::plotlyOutput(ns("ora_plot"), height = "650px")),
+            br(),
+            uiOutput(ns("ora_interpretation_ui"))
           ),
           
           tabPanel(
@@ -137,7 +143,9 @@ mod_bulk_enrich_ui <- function(id) {
             br(),
             tags$small("Select a KEGG row in the ORA table before drawing the pathway."),
             br(), br(),
-            imageOutput(ns("pathview_image"), height = "700px")
+            imageOutput(ns("pathview_image"), height = "700px"),
+            br(),
+            uiOutput(ns("pathview_interpretation_ui"))
           ),
           
           tabPanel(
@@ -154,7 +162,9 @@ mod_bulk_enrich_ui <- function(id) {
               column(6, downloadButton(ns("dl_nr_svg"), "SVG"))
             ),
             br(),
-            plotOutput(ns("nr_plot"), height = "600px")
+            plotOutput(ns("nr_plot"), height = "600px"),
+            br(),
+            uiOutput(ns("network_interpretation_ui"))
           )
         )
       )
@@ -171,6 +181,150 @@ mod_bulk_enrich_server <- function(id, deg_data, wgcna_output = NULL, dds.fc = N
     
     observeEvent(input$help_toggle, {
       shinyjs::toggle(id = "help_box", anim = TRUE)
+    })
+    
+    observeEvent(input$mapping_interp_toggle, {
+      shinyjs::toggle(id = "mapping_interp_body", anim = TRUE)
+    })
+    
+    observeEvent(input$ora_interp_toggle, {
+      shinyjs::toggle(id = "ora_interp_body", anim = TRUE)
+    })
+    
+    observeEvent(input$pathview_interp_toggle, {
+      shinyjs::toggle(id = "pathview_interp_body", anim = TRUE)
+    })
+    
+    observeEvent(input$network_interp_toggle, {
+      shinyjs::toggle(id = "network_interp_body", anim = TRUE)
+    })
+    
+    interpretation_box <- function(title, body_id, button_id, content) {
+      tags$div(
+        style = "border:1px solid #cfd8dc; border-radius:4px; margin-top:10px; background:white; overflow:hidden; box-shadow:0 1px 2px rgba(0,0,0,0.08);",
+        
+        tags$div(
+          style = "background:#1aa3b0; color:white; padding:9px 14px; display:flex; align-items:center; justify-content:space-between;",
+          
+          tags$span(
+            icon("info-circle"),
+            title
+          ),
+          
+          actionButton(
+            ns(button_id),
+            label = NULL,
+            icon = icon("minus"),
+            class = "btn btn-xs",
+            style = "background:#147f8a; color:white; border:1px solid #0f6c75; padding:2px 8px;"
+          )
+        ),
+        
+        div(
+          id = ns(body_id),
+          style = "padding:16px 18px; color:#111; background:white;",
+          content
+        )
+      )
+    }
+    
+    output$mapping_interpretation_ui <- renderUI({
+      interpretation_box(
+        title = "Interpretation: gene ID mapping",
+        body_id = "mapping_interp_body",
+        button_id = "mapping_interp_toggle",
+        content = tagList(
+          h4("How to interpret mapping QC"),
+          p("This section shows how many genes were mapped to SYMBOL, ENTREZID, and ENSEMBL identifiers."),
+          h4("What to look for"),
+          tags$ul(
+            tags$li("High SYMBOL mapping is important for Hallmark and GO analysis."),
+            tags$li("High ENTREZID mapping is important for KEGG, Reactome, and Pathview."),
+            tags$li("The selected organism should match the species used in the experiment."),
+            tags$li("Low mapping can reduce enrichment power and may remove important genes.")
+          ),
+          h4("Main caution"),
+          p("Wrong organism selection or mixed gene ID formats can cause poor mapping."),
+          h4("Recommended next step"),
+          p("If mapping is low, check the gene ID column, organism, and whether genes are symbols or Ensembl IDs.")
+        )
+      )
+    })
+    
+    output$ora_interpretation_ui <- renderUI({
+      interpretation_box(
+        title = "Interpretation: ORA enrichment",
+        body_id = "ora_interp_body",
+        button_id = "ora_interp_toggle",
+        content = tagList(
+          h4("How to interpret ORA results"),
+          p("ORA identifies pathways or biological terms that contain more significant genes than expected by chance."),
+          h4("What to look for"),
+          tags$ul(
+            tags$li("Each row represents an enriched pathway or gene set."),
+            tags$li("Adjusted p value shows statistical support after multiple testing correction."),
+            tags$li("GeneRatio shows how many significant genes are found in the term."),
+            tags$li("Count shows the number of genes from your list linked to that term."),
+            tags$li("Up and Down results should be interpreted separately when direction splitting is enabled.")
+          ),
+          h4("Good result"),
+          p("Strong results have low adjusted p values and biologically meaningful terms supported by several genes."),
+          h4("Main caution"),
+          p("Enrichment shows association, not direct causation. Very broad terms may be less informative."),
+          h4("Recommended next step"),
+          p("Inspect the leading genes in key terms and compare enriched pathways with known biology.")
+        )
+      )
+    })
+    
+    output$pathview_interpretation_ui <- renderUI({
+      interpretation_box(
+        title = "Interpretation: KEGG Pathview",
+        body_id = "pathview_interp_body",
+        button_id = "pathview_interp_toggle",
+        content = tagList(
+          h4("How to interpret KEGG Pathview"),
+          p("Pathview maps gene-level fold changes onto a KEGG pathway diagram."),
+          h4("What to look for"),
+          tags$ul(
+            tags$li("Colored genes are mapped from your differential expression table."),
+            tags$li("Color intensity reflects the fold-change magnitude."),
+            tags$li("Genes in the same pathway region may suggest coordinated pathway activity."),
+            tags$li("Uncolored nodes usually mean the gene was not detected or not mapped.")
+          ),
+          h4("Good result"),
+          p("A biologically relevant pathway shows multiple changed genes in connected parts of the pathway."),
+          h4("Main caution"),
+          p("Pathview depends on ENTREZID mapping and KEGG coverage. Missing colors do not always mean no biological relevance."),
+          h4("Recommended next step"),
+          p("Use Pathview together with ORA results and gene-level fold changes.")
+        )
+      )
+    })
+    
+    output$network_interpretation_ui <- renderUI({
+      interpretation_box(
+        title = "Interpretation: network plots",
+        body_id = "network_interp_body",
+        button_id = "network_interp_toggle",
+        content = tagList(
+          h4("How to interpret enrichment networks"),
+          p("Network plots show relationships between enriched terms and genes or between related enriched terms."),
+          h4("What to look for"),
+          tags$ul(
+            tags$li("Cnetplot links genes to enriched pathways or terms."),
+            tags$li("Genes connected to many terms may be central drivers of enrichment."),
+            tags$li("Emapplot links similar enriched terms based on shared genes."),
+            tags$li("Clusters of terms can represent related biological themes.")
+          ),
+          h4("Good result"),
+          p("Clear term clusters and shared genes help identify major biological processes."),
+          h4("Main caution"),
+          p("Dense networks can be difficult to interpret. Reduce the number of displayed categories if needed."),
+          h4("Recommended next step"),
+          p("Focus on recurring genes and connected term clusters for biological interpretation.")
+        )
+      )
     })
     
     clean_ids <- function(x) {
@@ -604,12 +758,20 @@ mod_bulk_enrich_server <- function(id, deg_data, wgcna_output = NULL, dds.fc = N
     
     output$dl_ora_pdf <- downloadHandler(
       filename = function() "ORA_plot.pdf",
-      content = function(file) { grDevices::pdf(file, width = 9, height = 7); print(ora_plot_obj()); grDevices::dev.off() }
+      content = function(file) {
+        grDevices::pdf(file, width = 9, height = 7)
+        print(ora_plot_obj())
+        grDevices::dev.off()
+      }
     )
     
     output$dl_ora_svg <- downloadHandler(
       filename = function() "ORA_plot.svg",
-      content = function(file) { svglite::svglite(file, width = 9, height = 7); print(ora_plot_obj()); grDevices::dev.off() }
+      content = function(file) {
+        svglite::svglite(file, width = 9, height = 7)
+        print(ora_plot_obj())
+        grDevices::dev.off()
+      }
     )
     
     selected_kegg_id <- reactive({
@@ -683,12 +845,20 @@ mod_bulk_enrich_server <- function(id, deg_data, wgcna_output = NULL, dds.fc = N
     
     output$dl_nr_pdf <- downloadHandler(
       filename = function() paste0("network_plot_", input$nr_type, ".pdf"),
-      content = function(file) { grDevices::pdf(file, width = 9, height = 7); print(nr_plot_obj()); grDevices::dev.off() }
+      content = function(file) {
+        grDevices::pdf(file, width = 9, height = 7)
+        print(nr_plot_obj())
+        grDevices::dev.off()
+      }
     )
     
     output$dl_nr_svg <- downloadHandler(
       filename = function() paste0("network_plot_", input$nr_type, ".svg"),
-      content = function(file) { svglite::svglite(file, width = 9, height = 7); print(nr_plot_obj()); grDevices::dev.off() }
+      content = function(file) {
+        svglite::svglite(file, width = 9, height = 7)
+        print(nr_plot_obj())
+        grDevices::dev.off()
+      }
     )
     
     return(list(

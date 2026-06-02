@@ -35,12 +35,12 @@ source("modules/sc/markers.R")
 # source("modules/sc/featureplots.R")
 # source("modules/sc/feature_viewer.R")
 source("modules/sc/annotation.R")
-source("modules/sc/differential_abundance.R")
+#source("modules/sc/differential_abundance.R")
 source("modules/sc/trajectory.R")
 source("modules/sc/pathway_activity.R")
 source("modules/sc/cell_communication.R")
 #source("modules/sc/velocity.R")
-# source("modules/sc/report.R")
+source("modules/sc/report.R")
 # source("modules/sc/export.R")
 
 # ==========================================================
@@ -107,15 +107,15 @@ ui <- bs4DashPage(
         #bs4SidebarMenuSubItem("Subset + Recluster", tabName = "sc_subset", icon = icon("crop")),
         bs4SidebarMenuSubItem("Markers", tabName = "sc_markers", icon = icon("bolt")),
         bs4SidebarMenuSubItem("Annotation", tabName = "sc_annot", icon = icon("tags")),
-        bs4SidebarMenuSubItem("Differential Abundance", tabName = "sc_da", icon = icon("chart-bar")),
+        #bs4SidebarMenuSubItem("Differential Abundance", tabName = "sc_da", icon = icon("chart-bar")),
         #bs4SidebarMenuSubItem("Feature Plots", tabName = "sc_featureplots", icon = icon("palette")),
         #bs4SidebarMenuSubItem("Marker Viewer", tabName = "sc_feature", icon = icon("eye")),
         bs4SidebarMenuSubItem("Trajectory", tabName = "sc_trajectory", icon = icon("space-shuttle")),
         bs4SidebarMenuSubItem("Pathway Activity", tabName = "sc_pathway", icon = icon("fire")),
         bs4SidebarMenuSubItem("Cell Communication", tabName = "sc_comm", icon = icon("satellite-dish")),
         #bs4SidebarMenuSubItem("RNA Velocity", tabName = "sc_velocity", icon = icon("bolt")),
-        bs4SidebarMenuSubItem("Report", tabName = "sc_report", icon = icon("file-alt")),
-        bs4SidebarMenuSubItem("Export", tabName = "sc_export", icon = icon("download"))
+        bs4SidebarMenuSubItem("Report", tabName = "sc_report", icon = icon("file-alt"))
+        #bs4SidebarMenuSubItem("Export", tabName = "sc_export", icon = icon("download"))
       )
     )
   ),
@@ -184,7 +184,7 @@ ui <- bs4DashPage(
       bs4TabItem("sc_annot", mod_sc_annotation_ui("sc_annot")),
       
       # Differential Abundance
-      bs4TabItem("sc_da", mod_sc_differential_abundance_ui("sc_da")),
+      #bs4TabItem("sc_da", mod_sc_differential_abundance_ui("sc_da")),
       
       # Trajectory
       bs4TabItem("sc_trajectory", mod_sc_trajectory_ui("sc_trajectory")),
@@ -193,7 +193,10 @@ ui <- bs4DashPage(
       bs4TabItem("sc_pathway", mod_sc_pathway_ui("sc_pathway")),
       
       # Cell-Cell Communication
-      bs4TabItem("sc_comm", mod_sc_comm_ui("sc_comm"))
+      bs4TabItem("sc_comm", mod_sc_comm_ui("sc_comm")),
+      
+      # Report
+      bs4TabItem("sc_report", mod_sc_report_ui("sc_report"))
       
       # RNA velocity
       #bs4TabItem("sc_velocity", mod_sc_velocity_ui("sc_velocity"))

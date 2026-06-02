@@ -457,7 +457,31 @@ mod_sc_differential_abundance_server <- function(
         
         incProgress(0.45, detail = "Running selected method")
         
-        method_used <- choose_sc_da_method(input$method)
+        sample_check <- counts_long %>%
+          dplyr::distinct(.sample, .group) %>%
+          dplyr::count(.group, name = "n_samples")
+        
+        has_replicates <- all(sample_check$n_samples >= 2)
+        
+        method_used <- input$method
+        
+        if (method_used == "auto") {
+          if (has_replicates && requireNamespace("limma", quietly = TRUE)) {
+            method_used <- "propeller"
+          } else if (has_replicates && requireNamespace("edgeR", quietly = TRUE)) {
+            method_used <- "edger"
+          } else {
+            method_used <- "fisher"
+          }
+        }
+        
+        if (method_used %in% c("propeller", "edger") && !has_replicates) {
+          showNotification(
+            "Not enough biological replicates per group. Falling back to Fisher exact test.",
+            type = "warning"
+          )
+          method_used <- "fisher"
+        }
         
         results <- run_sc_da_method(
           counts = counts_long,

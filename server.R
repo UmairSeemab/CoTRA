@@ -28,10 +28,11 @@ source("modules/sc/tsne_umap.R")
 source("modules/sc/clustering.R")
 source("modules/sc/markers.R")
 source("modules/sc/annotation.R")
-source("modules/sc/differential_abundance.R")
+#source("modules/sc/differential_abundance.R")
 source("modules/sc/trajectory.R")
 source("modules/sc/pathway_activity.R")
 source("modules/sc/cell_communication.R")
+source("modules/sc/report.R")
 #source("modules/sc/velocity.R")
 
 
@@ -103,42 +104,67 @@ server <- function(input, output, session) {
     sc_state = cotra_state
   )
   
-  # Annotation
+  # 8. Annotation
   sc_annot <- mod_sc_annotation_server(
     "sc_annot",
     seurat_r = sc_markers$seurat,
     sc_state = cotra_state
   )
   
-  # 8. Differential Abundance
-  sc_da <- mod_sc_differential_abundance_server(
-    "sc_da",
-    seurat_r = sc_annot$seurat,
-    sc_state = cotra_state
-  )
+  # Use annotated object if available, otherwise marker/clustering object
+  sc_da_input <- reactive({
+    annotated_obj <- tryCatch(
+      sc_annot$seurat(),
+      error = function(e) NULL
+    )
+    
+    if (inherits(annotated_obj, "Seurat")) {
+      return(annotated_obj)
+    }
+    
+    sc_markers$seurat()
+  })
   
-  # 8. Trajectory, independent
+  # 9. Differential Abundance
+  #sc_da <- mod_sc_differential_abundance_server(
+    #"sc_da",
+   # seurat_r = sc_da_input,
+   # sc_state = cotra_state
+  #)
+  
+  # 10. Trajectory
   sc_trajectory <- mod_sc_trajectory_server(
     "sc_trajectory",
-    seurat_r = sc_markers$seurat,
+    seurat_r = sc_da_input,
     sc_state = cotra_state
   )
   
-  # 9. Pathway Activity, independent from trajectory
+  # 11. Pathway Activity
   sc_pathway <- mod_sc_pathway_server(
     "sc_pathway",
-    seurat_r = sc_markers$seurat,
+    seurat_r = sc_da_input,
     sc_state = cotra_state
   )
   
-  # 10. Cell-Cell Communication
+  # 12. Cell-Cell Communication
   sc_comm <- mod_sc_comm_server(
     "sc_comm",
-    seurat_r = sc_markers$seurat,
+    seurat_r = sc_da_input,
     sc_state = cotra_state
   )
+  # 13. scRNA Report
+  sc_report <- mod_sc_report_server(
+    "sc_report",
+    seurat_r = sc_da_input,
+    sc_state = cotra_state,
+    sc_markers = sc_markers,
+    sc_annot = sc_annot,
+    sc_trajectory = sc_trajectory,
+    sc_pathway = sc_pathway,
+    sc_comm = sc_comm
+  )
   
-  # 10. RNA Velocity
+  # 13. RNA Velocity
   #sc_velocity <- mod_sc_velocity_server(
    # "sc_velocity",
    # seurat_r = sc_markers$seurat,

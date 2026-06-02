@@ -5,6 +5,7 @@
 # Includes help section, result downloads, PDF/SVG plot downloads
 # Species selection added
 # Comparison group auto updates when reference changes
+# Expandable interpretation sections added
 # ==========================================================
 
 suppressPackageStartupMessages({
@@ -175,7 +176,9 @@ mod_bulk_de_ui <- function(id) {
           column(3, downloadButton(ns("download_volcano_svg"), "Download SVG"))
         ),
         br(),
-        plotly::plotlyOutput(ns("volcano"), height = "550px")
+        plotly::plotlyOutput(ns("volcano"), height = "550px"),
+        br(),
+        uiOutput(ns("volcano_interpretation_ui"))
       ),
       
       tabPanel(
@@ -186,7 +189,9 @@ mod_bulk_de_ui <- function(id) {
           column(3, downloadButton(ns("download_ma_svg"), "Download SVG"))
         ),
         br(),
-        plotly::plotlyOutput(ns("ma_plot"), height = "550px")
+        plotly::plotlyOutput(ns("ma_plot"), height = "550px"),
+        br(),
+        uiOutput(ns("ma_interpretation_ui"))
       ),
       
       tabPanel(
@@ -197,7 +202,9 @@ mod_bulk_de_ui <- function(id) {
           column(3, downloadButton(ns("download_pca_svg"), "Download SVG"))
         ),
         br(),
-        plotly::plotlyOutput(ns("pca_de"), height = "550px")
+        plotly::plotlyOutput(ns("pca_de"), height = "550px"),
+        br(),
+        uiOutput(ns("pca_interpretation_ui"))
       ),
       
       tabPanel(
@@ -216,11 +223,16 @@ mod_bulk_de_ui <- function(id) {
           column(3, downloadButton(ns("download_heatmap_svg"), "Download SVG"))
         ),
         br(),
-        plotly::plotlyOutput(ns("heatmap"), height = "700px")
+        plotly::plotlyOutput(ns("heatmap"), height = "700px"),
+        br(),
+        uiOutput(ns("heatmap_interpretation_ui"))
       ),
       
       tabPanel(
         "DE Tables",
+        br(),
+        uiOutput(ns("table_interpretation_ui")),
+        br(),
         tabsetPanel(
           tabPanel("All filtered", DT::DTOutput(ns("table_sig"))),
           tabPanel("Upregulated", DT::DTOutput(ns("table_up"))),
@@ -244,6 +256,185 @@ mod_bulk_de_server <- function(id, bulk_data, groups) {
     
     observeEvent(input$help_toggle, {
       shinyjs::toggle(id = "help_box", anim = TRUE)
+    })
+    
+    observeEvent(input$volcano_interp_toggle, {
+      shinyjs::toggle(id = "volcano_interp_body", anim = TRUE)
+    })
+    
+    observeEvent(input$ma_interp_toggle, {
+      shinyjs::toggle(id = "ma_interp_body", anim = TRUE)
+    })
+    
+    observeEvent(input$pca_interp_toggle, {
+      shinyjs::toggle(id = "pca_interp_body", anim = TRUE)
+    })
+    
+    observeEvent(input$heatmap_interp_toggle, {
+      shinyjs::toggle(id = "heatmap_interp_body", anim = TRUE)
+    })
+    
+    observeEvent(input$table_interp_toggle, {
+      shinyjs::toggle(id = "table_interp_body", anim = TRUE)
+    })
+    
+    interpretation_box <- function(title, body_id, button_id, content) {
+      tags$div(
+        style = "border:1px solid #cfd8dc; border-radius:4px; margin-top:10px; background:white; overflow:hidden; box-shadow:0 1px 2px rgba(0,0,0,0.08);",
+        
+        tags$div(
+          style = "background:#1aa3b0; color:white; padding:9px 14px; display:flex; align-items:center; justify-content:space-between;",
+          
+          tags$span(
+            icon("info-circle"),
+            title
+          ),
+          
+          actionButton(
+            ns(button_id),
+            label = NULL,
+            icon = icon("minus"),
+            class = "btn btn-xs",
+            style = "background:#147f8a; color:white; border:1px solid #0f6c75; padding:2px 8px;"
+          )
+        ),
+        
+        div(
+          id = ns(body_id),
+          style = "padding:16px 18px; color:#111; background:white;",
+          content
+        )
+      )
+    }
+    
+    output$volcano_interpretation_ui <- renderUI({
+      interpretation_box(
+        title = "Interpretation: Volcano plot",
+        body_id = "volcano_interp_body",
+        button_id = "volcano_interp_toggle",
+        content = tagList(
+          h4("How to interpret the volcano plot"),
+          p("The volcano plot shows both effect size and statistical significance for each gene."),
+          h4("What to look for"),
+          tags$ul(
+            tags$li("Each point represents one gene."),
+            tags$li("The x-axis shows log2 fold change."),
+            tags$li("Genes on the right are higher in the comparison group."),
+            tags$li("Genes on the left are higher in the reference group."),
+            tags$li("The y-axis shows minus log10 adjusted p value. Higher points are more statistically significant.")
+          ),
+          h4("Good result"),
+          p("Strong candidate genes appear far from zero on the x-axis and high on the y-axis."),
+          h4("Main caution"),
+          p("Genes with large fold change but weak adjusted p values should be interpreted carefully, especially with small sample size."),
+          h4("Recommended next step"),
+          p("Use the significant genes for functional enrichment, pathway analysis, or focused biological interpretation.")
+        )
+      )
+    })
+    
+    output$ma_interpretation_ui <- renderUI({
+      interpretation_box(
+        title = "Interpretation: MA plot",
+        body_id = "ma_interp_body",
+        button_id = "ma_interp_toggle",
+        content = tagList(
+          h4("How to interpret the MA plot"),
+          p("The MA plot shows gene expression change in relation to average expression level."),
+          h4("What to look for"),
+          tags$ul(
+            tags$li("Each point represents one gene."),
+            tags$li("The x-axis shows mean expression."),
+            tags$li("The y-axis shows log2 fold change."),
+            tags$li("Genes above zero are higher in the comparison group."),
+            tags$li("Genes below zero are higher in the reference group.")
+          ),
+          h4("Good result"),
+          p("Significant genes with strong fold changes are visible away from the zero line."),
+          h4("Main caution"),
+          p("Low-expression genes can show unstable fold changes. Interpret them with care."),
+          h4("Recommended next step"),
+          p("Check whether key significant genes have enough expression to support reliable interpretation.")
+        )
+      )
+    })
+    
+    output$pca_interpretation_ui <- renderUI({
+      interpretation_box(
+        title = "Interpretation: PCA of significant genes",
+        body_id = "pca_interp_body",
+        button_id = "pca_interp_toggle",
+        content = tagList(
+          h4("How to interpret PCA of significant genes"),
+          p("This PCA shows whether samples separate using only genes that pass the current DE thresholds."),
+          h4("What to look for"),
+          tags$ul(
+            tags$li("Each point represents one sample."),
+            tags$li("Samples close together have similar expression patterns among significant genes."),
+            tags$li("Clear group separation supports a strong transcriptional difference."),
+            tags$li("Mixed samples suggest weaker group structure or higher within-group variation.")
+          ),
+          h4("Good result"),
+          p("Samples from the same group cluster together and separate from the other group."),
+          h4("Main caution"),
+          p("This plot uses significant genes selected from the same comparison, so it can look stronger than an unbiased PCA."),
+          h4("Recommended next step"),
+          p("Use this plot as a visual summary, but confirm group structure with QC PCA and biological validation.")
+        )
+      )
+    })
+    
+    output$heatmap_interpretation_ui <- renderUI({
+      interpretation_box(
+        title = "Interpretation: Heatmap of significant genes",
+        body_id = "heatmap_interp_body",
+        button_id = "heatmap_interp_toggle",
+        content = tagList(
+          h4("How to interpret the heatmap"),
+          p("The heatmap shows expression patterns of significant genes across samples."),
+          h4("What to look for"),
+          tags$ul(
+            tags$li("Rows represent genes."),
+            tags$li("Columns represent samples."),
+            tags$li("Color shows relative expression after scaling by gene."),
+            tags$li("Genes with similar expression patterns cluster together."),
+            tags$li("Samples with similar expression profiles cluster together.")
+          ),
+          h4("Good result"),
+          p("Samples from the same group cluster together and show consistent gene expression patterns."),
+          h4("Main caution"),
+          p("Heatmap colors show relative expression, not raw expression. A strong color does not always mean high absolute expression."),
+          h4("Recommended next step"),
+          p("Inspect top gene clusters and connect them to pathways, known markers, or disease biology.")
+        )
+      )
+    })
+    
+    output$table_interpretation_ui <- renderUI({
+      interpretation_box(
+        title = "Interpretation: DE result tables",
+        body_id = "table_interp_body",
+        button_id = "table_interp_toggle",
+        content = tagList(
+          h4("How to interpret DE tables"),
+          p("The tables list genes tested for differential expression between the selected groups."),
+          h4("Important columns"),
+          tags$ul(
+            tags$li("gene: gene identifier or gene symbol."),
+            tags$li("baseMean: average expression level across samples."),
+            tags$li("lfc: log2 fold change between comparison and reference group."),
+            tags$li("pvalue: raw statistical p value."),
+            tags$li("padj: adjusted p value corrected for multiple testing."),
+            tags$li("significant: whether the gene passes the selected thresholds.")
+          ),
+          h4("Direction of change"),
+          p("Positive log2FC means the gene is higher in the comparison group. Negative log2FC means the gene is higher in the reference group."),
+          h4("Main caution"),
+          p("Adjusted p value is more reliable than raw p value for genome-wide analysis."),
+          h4("Recommended next step"),
+          p("Download filtered, upregulated, and downregulated genes for annotation and enrichment analysis.")
+        )
+      )
     })
     
     apply_gene_search <- function(df, query) {
