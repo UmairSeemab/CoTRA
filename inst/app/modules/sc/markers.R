@@ -887,7 +887,7 @@ mod_sc_markers_server <- function(id, seurat_r, sc_state = NULL) {
         seu_out <- markers_seu() %||% get_seu()
         req(seu_out)
         
-        out_dir <- file.path("outputs", "scRNA", "sessioninfo")
+        out_dir <- cotra_module_output_dir("scRNA", "sessioninfo")
         if (!dir.exists(out_dir)) {
           dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
         }

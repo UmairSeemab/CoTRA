@@ -180,7 +180,7 @@ mod_sc_report_server <- function(
     sc_trajectory = NULL,
     sc_pathway = NULL,
     sc_comm = NULL,
-    output_dir = "outputs/scRNA/report"
+    output_dir = NULL
 ) {
   moduleServer(id, function(input, output, session) {
     
@@ -190,7 +190,12 @@ mod_sc_report_server <- function(
     report_ready     <- reactiveVal(FALSE)
     pdf_error_msg    <- reactiveVal(NULL)
     
-    dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+    effective_output_dir <- reactive({
+      if (!is.null(output_dir) && nzchar(as.character(output_dir)[1])) {
+        return(cotra_ensure_output_dir(output_dir))
+      }
+      cotra_module_output_dir("scRNA", "Reports")
+    })
     
     get_obj <- reactive({
       obj <- seurat_r()
@@ -283,16 +288,16 @@ mod_sc_report_server <- function(
     observeEvent(input$generate_report, {
       obj <- get_obj()
       
-      timestamp <- format(Sys.time(), "%Y%m%d_%H%M%S")
-      run_dir <- file.path(output_dir, paste0("CoTRA_scRNA_report_", timestamp))
+      report_timestamp <- cotra_timestamp()
+      run_dir <- file.path(effective_output_dir(), paste0("CoTRA_scRNA_Report_", report_timestamp))
       fig_dir <- file.path(run_dir, "figures")
       
       dir.create(run_dir, recursive = TRUE, showWarnings = FALSE)
       dir.create(fig_dir, recursive = TRUE, showWarnings = FALSE)
       
-      html_file <- file.path(run_dir, paste0("CoTRA_scRNA_report_", timestamp, ".html"))
-      pdf_file  <- file.path(run_dir, paste0("CoTRA_scRNA_report_", timestamp, ".pdf"))
-      rmd_file  <- file.path(run_dir, "CoTRA_scRNA_report.Rmd")
+      html_file <- file.path(run_dir, cotra_file_name("CoTRA_scRNA_Report", "html", timestamp = report_timestamp))
+      pdf_file  <- file.path(run_dir, cotra_file_name("CoTRA_scRNA_Report", "pdf", timestamp = report_timestamp))
+      rmd_file  <- file.path(run_dir, cotra_file_name("CoTRA_scRNA_Report_Template", "Rmd", timestamp = report_timestamp))
       
       withProgress(message = "Generating scRNA report", value = 0, {
         
@@ -403,7 +408,7 @@ mod_sc_report_server <- function(
     
     output$download_zip <- downloadHandler(
       filename = function() {
-        paste0("CoTRA_scRNA_report_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".zip")
+        cotra_file_name("CoTRA_scRNA_Report_AllFiles", "zip")
       },
       content = function(file) {
         req(report_dir_path())
@@ -494,7 +499,7 @@ create_sc_report_figures <- function(obj, fig_dir, include_figures = TRUE) {
       pt.size = 0
     ) + ggplot2::ggtitle("Quality control metrics")
     
-    f <- file.path(fig_dir, "qc_violin.png")
+    f <- file.path(fig_dir, cotra_file_name("scRNA_QC_ViolinPlot", "png"))
     ggplot2::ggsave(f, p, width = 10, height = 5, dpi = 150)
     figs$qc <- f
   }
@@ -503,7 +508,7 @@ create_sc_report_figures <- function(obj, fig_dir, include_figures = TRUE) {
     p <- Seurat::DimPlot(obj, reduction = "pca") +
       ggplot2::ggtitle("PCA")
     
-    f <- file.path(fig_dir, "pca.png")
+    f <- file.path(fig_dir, cotra_file_name("scRNA_PCA_DimPlot", "png"))
     ggplot2::ggsave(f, p, width = 8, height = 6, dpi = 150)
     figs$pca <- f
   }
@@ -527,7 +532,7 @@ create_sc_report_figures <- function(obj, fig_dir, include_figures = TRUE) {
         ggplot2::ggtitle("UMAP")
     }
     
-    f <- file.path(fig_dir, "umap.png")
+    f <- file.path(fig_dir, cotra_file_name("scRNA_UMAP_DimPlot", "png"))
     ggplot2::ggsave(f, p, width = 8, height = 6, dpi = 150)
     figs$umap <- f
   }
@@ -536,7 +541,7 @@ create_sc_report_figures <- function(obj, fig_dir, include_figures = TRUE) {
     p <- Seurat::DimPlot(obj, reduction = "tsne") +
       ggplot2::ggtitle("t-SNE")
     
-    f <- file.path(fig_dir, "tsne.png")
+    f <- file.path(fig_dir, cotra_file_name("scRNA_tSNE_DimPlot", "png"))
     ggplot2::ggsave(f, p, width = 8, height = 6, dpi = 150)
     figs$tsne <- f
   }

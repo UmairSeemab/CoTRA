@@ -42,6 +42,30 @@ server <- function(input, output, session) {
   
   useShinyjs()
   
+  shinyFiles::shinyDirChoose(
+    input,
+    "global_output_dir",
+    roots = cotra_available_roots(),
+    session = session,
+    restrictions = system.file(package = "base")
+  )
+  
+  observe({
+    selected <- shinyFiles::parseDirPath(
+      roots = cotra_available_roots(),
+      selection = input$global_output_dir
+    )
+    if (length(selected) > 0 && nzchar(selected[1])) {
+      cotra_state$output <- cotra_ensure_output_dir(selected[1])
+    } else {
+      cotra_state$output <- cotra_ensure_output_dir(cotra_state$output)
+    }
+  })
+  
+  output$global_output_dir_text <- renderText({
+    cotra_get_output_dir()
+  })
+  
   # ==========================================================
   #                BULK RNA-SEQ PIPELINE
   # ==========================================================

@@ -143,6 +143,17 @@ ui <- bs4DashPage(
             h3("CoTRA: Comprehensive Toolkit for RNA-seq Analysis"),
             p("CoTRA provides complete workflows for bulk and single-cell RNA-seq analysis."),
             hr(),
+            h4("Output folder"),
+            p("Choose where CoTRA should save generated reports, figures, CSV tables, ZIP files, and session files."),
+            shinyFiles::shinyDirButton(
+              "global_output_dir",
+              "Select output folder",
+              "Choose output folder"
+            ),
+            br(), br(),
+            strong("Current output folder:"),
+            verbatimTextOutput("global_output_dir_text"),
+            hr(),
             h4("Workflow Overview"),
             tags$img(src="cotra_flowchart.svg", width="100%",
                      style="border:1px solid #ccc; padding:8px; border-radius:6px;")

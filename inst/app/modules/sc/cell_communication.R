@@ -413,11 +413,11 @@ mod_sc_comm_server <- function(id, seurat_r, sc_state = NULL) {
         
         obj@misc$CoTRA_cell_communication <- comm_misc
         
-        dir.create("outputs/scRNA/sessioninfo", recursive = TRUE, showWarnings = FALSE)
+        dir.create(cotra_module_output_dir("scRNA", "sessioninfo"), recursive = TRUE, showWarnings = FALSE)
         
         timestamp <- format(Sys.time(), "%Y%m%d_%H%M%S")
         session_path <- file.path(
-          "outputs/scRNA/sessioninfo",
+          cotra_module_output_dir("scRNA", "sessioninfo"),
           paste0("CoTRA_scRNA_CellCommunication_session_", timestamp, ".rds")
         )
         

@@ -664,11 +664,11 @@ mod_sc_annotation_server <- function(id, seurat_r, sc_state = NULL) {
           created = Sys.time()
         )
         
-        dir.create("outputs/scRNA/sessioninfo", recursive = TRUE, showWarnings = FALSE)
+        dir.create(cotra_module_output_dir("scRNA", "sessioninfo"), recursive = TRUE, showWarnings = FALSE)
         
         timestamp <- format(Sys.time(), "%Y%m%d_%H%M%S")
         session_path <- file.path(
-          "outputs/scRNA/sessioninfo",
+          cotra_module_output_dir("scRNA", "sessioninfo"),
           paste0("CoTRA_scRNA_CellTypeAnnotation_session_", timestamp, ".rds")
         )
         

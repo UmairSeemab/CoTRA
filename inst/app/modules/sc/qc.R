@@ -773,7 +773,7 @@ mod_sc_qc_server <- function(id, seurat_r, sc_state = NULL) {
         paste0("CoTRA_scRNA_QC_session_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".rds")
       },
       content = function(file) {
-        out_dir <- file.path("outputs", "scRNA", "sessioninfo")
+        out_dir <- cotra_module_output_dir("scRNA", "sessioninfo")
         if (!dir.exists(out_dir)) {
           dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
         }
@@ -824,7 +824,7 @@ mod_sc_qc_server <- function(id, seurat_r, sc_state = NULL) {
           percent.ribo = c(params$min4, params$max4)
         )
       }),
-      session_path = reactive(file.path("outputs", "scRNA", "sessioninfo"))
+      session_path = reactive(cotra_module_output_dir("scRNA", "sessioninfo"))
     )
   })
 }

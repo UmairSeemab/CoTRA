@@ -260,17 +260,24 @@ mod_sc_differential_abundance_server <- function(
     id,
     seurat_r,
     sc_state = NULL,
-    output_dir = "outputs/scRNA/differential_abundance"
+    output_dir = NULL
 ) {
   moduleServer(id, function(input, output, session) {
     
     ns <- session$ns
     da_res <- reactiveVal(NULL)
     
-    dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
-    dir.create(file.path(output_dir, "tables"), recursive = TRUE, showWarnings = FALSE)
-    dir.create(file.path(output_dir, "plots"), recursive = TRUE, showWarnings = FALSE)
-    dir.create(file.path(output_dir, "sessioninfo"), recursive = TRUE, showWarnings = FALSE)
+    effective_output_dir <- reactive({
+      if (!is.null(output_dir) && nzchar(as.character(output_dir)[1])) {
+        out <- cotra_ensure_output_dir(output_dir)
+      } else {
+        out <- cotra_module_output_dir("scRNA", "Differential_Abundance")
+      }
+      dir.create(file.path(out, "tables"), recursive = TRUE, showWarnings = FALSE)
+      dir.create(file.path(out, "plots"), recursive = TRUE, showWarnings = FALSE)
+      dir.create(file.path(out, "sessioninfo"), recursive = TRUE, showWarnings = FALSE)
+      out
+    })
     
     get_obj <- reactive({
       obj <- seurat_r()
@@ -499,7 +506,7 @@ mod_sc_differential_abundance_server <- function(
         
         timestamp <- format(Sys.time(), "%Y%m%d_%H%M%S")
         session_path <- file.path(
-          output_dir,
+          effective_output_dir(),
           "sessioninfo",
           paste0("CoTRA_scRNA_DifferentialAbundance_session_", timestamp, ".rds")
         )

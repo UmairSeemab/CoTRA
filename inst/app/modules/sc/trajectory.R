@@ -959,11 +959,11 @@ mod_sc_trajectory_server <- function(id, seurat_r, sc_state = NULL) {
         
         obj@misc$CoTRA_trajectory <- trajectory_misc
         
-        dir.create("outputs/scRNA/sessioninfo", recursive = TRUE, showWarnings = FALSE)
+        dir.create(cotra_module_output_dir("scRNA", "sessioninfo"), recursive = TRUE, showWarnings = FALSE)
         
         timestamp <- format(Sys.time(), "%Y%m%d_%H%M%S")
         session_path <- file.path(
-          "outputs/scRNA/sessioninfo",
+          cotra_module_output_dir("scRNA", "sessioninfo"),
           paste0("CoTRA_scRNA_Trajectory_session_", timestamp, ".rds")
         )
         

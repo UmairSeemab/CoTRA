@@ -28,3 +28,19 @@ CoTRA::runCoTRA()
 ## Platform notes
 
 Windows, Ubuntu, and macOS users can install the package with the same R commands above.
+
+External command-line tools such as FastQC, STAR, HTSeq, MultiQC, and Chrome or Chromium for PDF reports must be installed separately when those workflows are used.
+
+## Bioconductor preparation
+
+This package keeps reusable R functions under `R/` and the Shiny app under `inst/app/`. This layout is compatible with later Bioconductor preparation. Before Bioconductor submission, run:
+
+```r
+devtools::check()
+BiocCheck::BiocCheck()
+```
+
+
+## Output folder
+
+After launching CoTRA, open the Home page and select an output folder. CoTRA saves generated reports, figures, CSV tables, ZIP files, and session files into this user-selected folder. If no folder is selected, CoTRA uses `~/CoTRA_Results`.

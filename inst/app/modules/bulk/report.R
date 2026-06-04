@@ -345,7 +345,7 @@ mod_bulk_report_server <- function(id,
             x = paste0("PC1 (", round(ve[1], 1), "%)"),
             y = paste0("PC2 (", round(ve[2], 1), "%)")
           )
-        out$qc_pca <- save_plot_all(p, file.path(fig_dir, "qc_pca"), 8, 6)
+        out$qc_pca <- save_plot_all(p, file.path(fig_dir, paste0("BulkQC_PCA_", report_timestamp)), 8, 6)
       }
       
       cor_mat <- tryCatch(stats::cor(mat_top), error = function(e) NULL)
@@ -358,14 +358,14 @@ mod_bulk_report_server <- function(id,
           ggplot2::theme_bw() +
           ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1)) +
           ggplot2::labs(title = "Sample correlation heatmap", x = "", y = "")
-        out$qc_correlation <- save_plot_all(p, file.path(fig_dir, "qc_sample_correlation"), 8, 7)
+        out$qc_correlation <- save_plot_all(p, file.path(fig_dir, paste0("BulkQC_SampleCorrelationHeatmap_", report_timestamp)), 8, 7)
       }
       
       hc <- tryCatch(stats::hclust(stats::dist(t(mat_top))), error = function(e) NULL)
       if (!is.null(hc)) {
-        dend_pdf <- file.path(fig_dir, "qc_sample_clustering.pdf")
-        dend_svg <- file.path(fig_dir, "qc_sample_clustering.svg")
-        dend_png <- file.path(fig_dir, "qc_sample_clustering.png")
+        dend_pdf <- file.path(fig_dir, cotra_file_name("BulkQC_SampleHierarchicalClustering", "pdf", timestamp = report_timestamp))
+        dend_svg <- file.path(fig_dir, cotra_file_name("BulkQC_SampleHierarchicalClustering", "svg", timestamp = report_timestamp))
+        dend_png <- file.path(fig_dir, cotra_file_name("BulkQC_SampleHierarchicalClustering", "png", timestamp = report_timestamp))
         
         grDevices::pdf(dend_pdf, width = 9, height = 6)
         plot(hc, main = "Sample hierarchical clustering", xlab = "", sub = "")
@@ -409,7 +409,7 @@ mod_bulk_report_server <- function(id,
         ggplot2::geom_point(alpha = 0.7, size = 1.5) +
         ggplot2::theme_bw() +
         ggplot2::labs(title = "Volcano plot", x = "log2 fold change", y = "-log10 adjusted p value")
-      out$de_volcano <- save_plot_all(p, file.path(fig_dir, "de_volcano"), 8, 6)
+      out$de_volcano <- save_plot_all(p, file.path(fig_dir, paste0("BulkDE_VolcanoPlot_", report_timestamp)), 8, 6)
       
       if ("baseMean" %in% colnames(df)) {
         df$baseMean_report <- suppressWarnings(as.numeric(df$baseMean))
@@ -417,7 +417,7 @@ mod_bulk_report_server <- function(id,
           ggplot2::geom_point(alpha = 0.7, size = 1.5) +
           ggplot2::theme_bw() +
           ggplot2::labs(title = "MA plot", x = "log10 mean expression", y = "log2 fold change")
-        out$de_ma <- save_plot_all(p, file.path(fig_dir, "de_ma"), 8, 6)
+        out$de_ma <- save_plot_all(p, file.path(fig_dir, paste0("BulkDE_MAPlot_", report_timestamp)), 8, 6)
       }
       
       sig <- significant_de(de_df)
@@ -442,7 +442,7 @@ mod_bulk_report_server <- function(id,
               axis.text.y = ggplot2::element_text(size = 6)
             ) +
             ggplot2::labs(title = paste0("Heatmap of top significant genes, n = ", length(genes)), x = "", y = "")
-          out$de_heatmap <- save_plot_all(p, file.path(fig_dir, "de_heatmap"), 10, 10)
+          out$de_heatmap <- save_plot_all(p, file.path(fig_dir, paste0("BulkDE_TopSignificantGenesHeatmap_", report_timestamp)), 10, 10)
         }
       }
       
@@ -465,7 +465,7 @@ mod_bulk_report_server <- function(id,
             ggplot2::coord_flip() +
             ggplot2::theme_bw() +
             ggplot2::labs(title = "Gene biotype distribution", x = "Gene biotype", y = "Gene count")
-          out$annotation_biotype <- save_plot_all(p, file.path(fig_dir, "annotation_gene_biotype"), 9, 6)
+          out$annotation_biotype <- save_plot_all(p, file.path(fig_dir, paste0("BulkAnnotation_GeneBiotypeDistribution_", report_timestamp)), 9, 6)
         }
       }
       
@@ -479,7 +479,7 @@ mod_bulk_report_server <- function(id,
             ggplot2::geom_col() +
             ggplot2::theme_bw() +
             ggplot2::labs(title = "Chromosome distribution", x = "Chromosome", y = "Gene count")
-          out$annotation_chromosome <- save_plot_all(p, file.path(fig_dir, "annotation_chromosome_distribution"), 9, 6)
+          out$annotation_chromosome <- save_plot_all(p, file.path(fig_dir, paste0("BulkAnnotation_ChromosomeDistribution_", report_timestamp)), 9, 6)
         }
       }
       
@@ -492,7 +492,7 @@ mod_bulk_report_server <- function(id,
             ggplot2::geom_histogram(bins = 40) +
             ggplot2::theme_bw() +
             ggplot2::labs(title = "Gene length distribution", x = "Gene length", y = "Count")
-          out$annotation_gene_length <- save_plot_all(p, file.path(fig_dir, "annotation_gene_length"), 9, 6)
+          out$annotation_gene_length <- save_plot_all(p, file.path(fig_dir, paste0("BulkAnnotation_GeneLengthDistribution_", report_timestamp)), 9, 6)
         }
       }
       
@@ -505,7 +505,7 @@ mod_bulk_report_server <- function(id,
             ggplot2::geom_point(size = 1.5, alpha = 0.8) +
             ggplot2::theme_bw() +
             ggplot2::labs(title = "Genomic location of annotated genes", x = "Chromosome", y = "Start position")
-          out$annotation_genomic_location <- save_plot_all(p, file.path(fig_dir, "annotation_genomic_location"), 9, 6)
+          out$annotation_genomic_location <- save_plot_all(p, file.path(fig_dir, paste0("BulkAnnotation_GenomicLocation_", report_timestamp)), 9, 6)
         }
       }
       
@@ -530,7 +530,7 @@ mod_bulk_report_server <- function(id,
         ggplot2::geom_point() +
         ggplot2::theme_bw() +
         ggplot2::labs(title = "Top enrichment terms", x = "Gene count", y = "", size = "No. of Genes", color = "Adjusted p")
-      out$enrichment_dotplot <- save_plot_all(p, file.path(fig_dir, "enrichment_dotplot"), 10, 8)
+      out$enrichment_dotplot <- save_plot_all(p, file.path(fig_dir, paste0("BulkEnrichment_DotPlot_", report_timestamp)), 10, 8)
       
       out
     }
@@ -672,9 +672,9 @@ mod_bulk_report_server <- function(id,
     }
     
     generate_report_files <- function() {
-      timestamp <- format(Sys.time(), "%Y%m%d_%H%M%S")
-      report_prefix <- paste0("CoTRA_bulk_report_", timestamp)
-      report_dir <- file.path("outputs", report_prefix)
+      report_timestamp <- cotra_timestamp()
+      report_prefix <- paste0("CoTRA_BulkRNA_Report_", report_timestamp)
+      report_dir <- file.path(cotra_module_output_dir("BulkRNA", "Reports"), report_prefix)
       if (!dir.exists(report_dir)) dir.create(report_dir, recursive = TRUE, showWarnings = FALSE)
       dir.create(report_dir, recursive = TRUE, showWarnings = FALSE)
       
@@ -690,11 +690,11 @@ mod_bulk_report_server <- function(id,
       ann <- get_annot()
       enrich <- get_enrich()
       
-      write_table(groups, file.path(table_dir, "groups.csv"))
-      write_table(de, file.path(table_dir, "de_all.csv"))
-      write_table(de_sig, file.path(table_dir, "de_significant.csv"))
-      write_table(ann, file.path(table_dir, "annotation.csv"))
-      write_table(enrich, file.path(table_dir, "enrichment.csv"))
+      write_table(groups, file.path(table_dir, cotra_file_name("BulkGroupSummary", "csv", timestamp = report_timestamp)))
+      write_table(de, file.path(table_dir, cotra_file_name("BulkDE_AllResults", "csv", timestamp = report_timestamp)))
+      write_table(de_sig, file.path(table_dir, cotra_file_name("BulkDE_SignificantGenes", "csv", timestamp = report_timestamp)))
+      write_table(ann, file.path(table_dir, cotra_file_name("BulkGeneAnnotation", "csv", timestamp = report_timestamp)))
+      write_table(enrich, file.path(table_dir, cotra_file_name("BulkEnrichmentResults", "csv", timestamp = report_timestamp)))
       
       figs <- list()
       if ("qc" %in% input$sections) figs <- c(figs, make_qc_plots(mat, fig_dir))
@@ -726,19 +726,40 @@ mod_bulk_report_server <- function(id,
       
       svg_files <- unlist(lapply(figs, function(x) x$svg), use.names = FALSE)
       svg_files <- svg_files[file.exists(svg_files)]
-      zip_file <- file.path(report_dir, paste0(report_prefix, "_svg_figures.zip"))
-      
+
+      zip_file <- file.path(report_dir, cotra_file_name("CoTRA_BulkRNA_SVG_Figures", "zip", timestamp = report_timestamp))
+      zip_file <- normalizePath(zip_file, winslash = "/", mustWork = FALSE)
+
+      dir.create(dirname(zip_file), recursive = TRUE, showWarnings = FALSE)
+      dir.create(fig_dir, recursive = TRUE, showWarnings = FALSE)
+
       old_wd <- getwd()
       on.exit(setwd(old_wd), add = TRUE)
-      setwd(fig_dir)
-      
-      if (length(svg_files) > 0) {
-        utils::zip(zipfile = zip_file, files = basename(svg_files))
-      } else {
-        writeLines("No SVG figures were generated.", "no_figures.txt")
-        utils::zip(zipfile = zip_file, files = "no_figures.txt")
+
+      zip_res <- tryCatch({
+        setwd(fig_dir)
+
+        if (length(svg_files) > 0) {
+          utils::zip(
+            zipfile = zip_file,
+            files = basename(svg_files)
+          )
+        } else {
+          writeLines("No SVG figures were generated.", "no_figures.txt")
+          utils::zip(
+            zipfile = zip_file,
+            files = "no_figures.txt"
+          )
+        }
+      }, error = function(e) e)
+
+      if (inherits(zip_res, "error") || !file.exists(zip_file)) {
+        stop(paste(
+          "SVG ZIP creation failed. SVG figures were generated, but ZIP file could not be created. Error:",
+          ifelse(inherits(zip_res, "error"), zip_res$message, "ZIP file was not found after creation.")
+        ))
       }
-      
+
       list(
         report_dir = report_dir,
         html = html_file,

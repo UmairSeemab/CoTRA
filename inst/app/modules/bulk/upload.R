@@ -321,7 +321,7 @@ mod_bulk_upload_server <- function(id){
       })
       
       output$download_norm <- downloadHandler(
-        filename = function(){ "normalized_matrix.csv" },
+        filename = function(){ cotra_file_name("Bulk_NormalizedCountMatrix", "csv") },
         content = function(file){
           write.csv(rv$norm, file, row.names = TRUE)
         }

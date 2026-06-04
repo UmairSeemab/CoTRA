@@ -820,7 +820,7 @@ mod_bulk_annotation_server <- function(id, de_results) {
     
     output$download_type_pdf <- downloadHandler(
       filename = function() {
-        "gene_biotype_distribution.pdf"
+        cotra_file_name("BulkAnnotation_GeneBiotypeDistribution", "pdf")
       },
       content = function(file) {
         save_static_plot(plot_type_static, file, "pdf")
@@ -829,7 +829,7 @@ mod_bulk_annotation_server <- function(id, de_results) {
     
     output$download_type_svg <- downloadHandler(
       filename = function() {
-        "gene_biotype_distribution.svg"
+        cotra_file_name("BulkAnnotation_GeneBiotypeDistribution", "svg")
       },
       content = function(file) {
         save_static_plot(plot_type_static, file, "svg")
@@ -838,7 +838,7 @@ mod_bulk_annotation_server <- function(id, de_results) {
     
     output$download_chr_pdf <- downloadHandler(
       filename = function() {
-        "chromosome_distribution.pdf"
+        cotra_file_name("BulkAnnotation_ChromosomeDistribution", "pdf")
       },
       content = function(file) {
         save_static_plot(plot_chr_static, file, "pdf")
@@ -847,7 +847,7 @@ mod_bulk_annotation_server <- function(id, de_results) {
     
     output$download_chr_svg <- downloadHandler(
       filename = function() {
-        "chromosome_distribution.svg"
+        cotra_file_name("BulkAnnotation_ChromosomeDistribution", "svg")
       },
       content = function(file) {
         save_static_plot(plot_chr_static, file, "svg")
@@ -856,7 +856,7 @@ mod_bulk_annotation_server <- function(id, de_results) {
     
     output$download_len_pdf <- downloadHandler(
       filename = function() {
-        "gene_length_distribution.pdf"
+        cotra_file_name("BulkAnnotation_GeneLengthDistribution", "pdf")
       },
       content = function(file) {
         save_static_plot(plot_len_static, file, "pdf")
@@ -865,7 +865,7 @@ mod_bulk_annotation_server <- function(id, de_results) {
     
     output$download_len_svg <- downloadHandler(
       filename = function() {
-        "gene_length_distribution.svg"
+        cotra_file_name("BulkAnnotation_GeneLengthDistribution", "svg")
       },
       content = function(file) {
         save_static_plot(plot_len_static, file, "svg")
@@ -874,7 +874,7 @@ mod_bulk_annotation_server <- function(id, de_results) {
     
     output$download_ideo_pdf <- downloadHandler(
       filename = function() {
-        "genomic_location.pdf"
+        cotra_file_name("BulkAnnotation_GenomicLocation", "pdf")
       },
       content = function(file) {
         save_static_plot(plot_ideo_static, file, "pdf")
@@ -883,7 +883,7 @@ mod_bulk_annotation_server <- function(id, de_results) {
     
     output$download_ideo_svg <- downloadHandler(
       filename = function() {
-        "genomic_location.svg"
+        cotra_file_name("BulkAnnotation_GenomicLocation", "svg")
       },
       content = function(file) {
         save_static_plot(plot_ideo_static, file, "svg")
@@ -892,7 +892,7 @@ mod_bulk_annotation_server <- function(id, de_results) {
     
     output$download_table <- downloadHandler(
       filename = function() {
-        paste0("gene_annotation_", input$gene_set, "_", input$species, ".csv")
+        cotra_file_name(paste0("BulkAnnotation_GeneTable_", input$gene_set, "_", input$species), "csv")
       },
       content = function(file) {
         write.csv(rv$annot, file, row.names = FALSE)

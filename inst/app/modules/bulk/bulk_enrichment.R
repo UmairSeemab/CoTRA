@@ -747,17 +747,17 @@ mod_bulk_enrich_server <- function(id, deg_data, wgcna_output = NULL, dds.fc = N
     })
     
     output$dl_ora_table <- downloadHandler(
-      filename = function() if (input$ora_download_type == "xlsx") "ORA_results.xlsx" else "ORA_results.csv",
+      filename = function() if (input$ora_download_type == "xlsx") cotra_file_name("BulkEnrichment_ORAResults", "xlsx") else cotra_file_name("BulkEnrichment_ORAResults", "csv"),
       content = function(file) save_table_file(ora_df(), file, input$ora_download_type, "ORA_results")
     )
     
     output$dl_ora_selected <- downloadHandler(
-      filename = function() if (input$ora_download_type == "xlsx") "ORA_selected.xlsx" else "ORA_selected.csv",
+      filename = function() if (input$ora_download_type == "xlsx") cotra_file_name("BulkEnrichment_ORASelectedTerm", "xlsx") else cotra_file_name("BulkEnrichment_ORASelectedTerm", "csv"),
       content = function(file) save_table_file(selected_ora_row(), file, input$ora_download_type, "ORA_selected")
     )
     
     output$dl_ora_pdf <- downloadHandler(
-      filename = function() "ORA_plot.pdf",
+      filename = function() cotra_file_name("BulkEnrichment_ORAPlot", "pdf"),
       content = function(file) {
         grDevices::pdf(file, width = 9, height = 7)
         print(ora_plot_obj())
@@ -766,7 +766,7 @@ mod_bulk_enrich_server <- function(id, deg_data, wgcna_output = NULL, dds.fc = N
     )
     
     output$dl_ora_svg <- downloadHandler(
-      filename = function() "ORA_plot.svg",
+      filename = function() cotra_file_name("BulkEnrichment_ORAPlot", "svg"),
       content = function(file) {
         svglite::svglite(file, width = 9, height = 7)
         print(ora_plot_obj())
@@ -816,7 +816,7 @@ mod_bulk_enrich_server <- function(id, deg_data, wgcna_output = NULL, dds.fc = N
     }, deleteFile = FALSE)
     
     output$dl_pathview_png <- downloadHandler(
-      filename = function() paste0("KEGG_pathview_", selected_kegg_id(), ".png"),
+      filename = function() cotra_file_name(paste0("BulkEnrichment_KEGGPathview_", selected_kegg_id()), "png"),
       content = function(file) file.copy(pathview_file(), file, overwrite = TRUE)
     )
     
@@ -844,7 +844,7 @@ mod_bulk_enrich_server <- function(id, deg_data, wgcna_output = NULL, dds.fc = N
     })
     
     output$dl_nr_pdf <- downloadHandler(
-      filename = function() paste0("network_plot_", input$nr_type, ".pdf"),
+      filename = function() cotra_file_name(paste0("BulkEnrichment_NetworkPlot_", input$nr_type), "pdf"),
       content = function(file) {
         grDevices::pdf(file, width = 9, height = 7)
         print(nr_plot_obj())
@@ -853,7 +853,7 @@ mod_bulk_enrich_server <- function(id, deg_data, wgcna_output = NULL, dds.fc = N
     )
     
     output$dl_nr_svg <- downloadHandler(
-      filename = function() paste0("network_plot_", input$nr_type, ".svg"),
+      filename = function() cotra_file_name(paste0("BulkEnrichment_NetworkPlot_", input$nr_type), "svg"),
       content = function(file) {
         svglite::svglite(file, width = 9, height = 7)
         print(nr_plot_obj())

@@ -1053,7 +1053,7 @@ mod_bulk_de_server <- function(id, bulk_data, groups) {
     output$download_csv <- downloadHandler(
       filename = function() {
         paste0(
-          "DE_filtered_",
+          "BulkDE_FilteredResults_",
           safe_filename(input$comp_group),
           "_vs_",
           safe_filename(input$ref_group),
@@ -1070,7 +1070,7 @@ mod_bulk_de_server <- function(id, bulk_data, groups) {
     output$download_all_csv <- downloadHandler(
       filename = function() {
         paste0(
-          "DE_all_",
+          "BulkDE_AllResults_",
           safe_filename(input$comp_group),
           "_vs_",
           safe_filename(input$ref_group),
@@ -1087,7 +1087,7 @@ mod_bulk_de_server <- function(id, bulk_data, groups) {
     output$download_volcano_pdf <- downloadHandler(
       filename = function() {
         paste0(
-          "Volcano_",
+          "BulkDE_VolcanoPlot_",
           safe_filename(input$comp_group),
           "_vs_",
           safe_filename(input$ref_group),
@@ -1107,7 +1107,7 @@ mod_bulk_de_server <- function(id, bulk_data, groups) {
     output$download_volcano_svg <- downloadHandler(
       filename = function() {
         paste0(
-          "Volcano_",
+          "BulkDE_VolcanoPlot_",
           safe_filename(input$comp_group),
           "_vs_",
           safe_filename(input$ref_group),
@@ -1127,7 +1127,7 @@ mod_bulk_de_server <- function(id, bulk_data, groups) {
     output$download_ma_pdf <- downloadHandler(
       filename = function() {
         paste0(
-          "MA_plot_",
+          "BulkDE_MAPlot_",
           safe_filename(input$comp_group),
           "_vs_",
           safe_filename(input$ref_group),
@@ -1147,7 +1147,7 @@ mod_bulk_de_server <- function(id, bulk_data, groups) {
     output$download_ma_svg <- downloadHandler(
       filename = function() {
         paste0(
-          "MA_plot_",
+          "BulkDE_MAPlot_",
           safe_filename(input$comp_group),
           "_vs_",
           safe_filename(input$ref_group),
@@ -1167,7 +1167,7 @@ mod_bulk_de_server <- function(id, bulk_data, groups) {
     output$download_pca_pdf <- downloadHandler(
       filename = function() {
         paste0(
-          "PCA_significant_genes_",
+          "BulkDE_SignificantGenesPCA_",
           safe_filename(input$comp_group),
           "_vs_",
           safe_filename(input$ref_group),
@@ -1187,7 +1187,7 @@ mod_bulk_de_server <- function(id, bulk_data, groups) {
     output$download_pca_svg <- downloadHandler(
       filename = function() {
         paste0(
-          "PCA_significant_genes_",
+          "BulkDE_SignificantGenesPCA_",
           safe_filename(input$comp_group),
           "_vs_",
           safe_filename(input$ref_group),
@@ -1207,7 +1207,7 @@ mod_bulk_de_server <- function(id, bulk_data, groups) {
     output$download_heatmap_pdf <- downloadHandler(
       filename = function() {
         paste0(
-          "Heatmap_significant_genes_",
+          "BulkDE_SignificantGenesHeatmap_",
           safe_filename(input$comp_group),
           "_vs_",
           safe_filename(input$ref_group),
@@ -1227,7 +1227,7 @@ mod_bulk_de_server <- function(id, bulk_data, groups) {
     output$download_heatmap_svg <- downloadHandler(
       filename = function() {
         paste0(
-          "Heatmap_significant_genes_",
+          "BulkDE_SignificantGenesHeatmap_",
           safe_filename(input$comp_group),
           "_vs_",
           safe_filename(input$ref_group),

@@ -154,10 +154,62 @@ theme_cotra <- function() {
 }
 
 # ======================================================
-#                 OUTPUT DIRECTORY CHECK
+#                 OUTPUT DIRECTORY HELPERS
 # ======================================================
 
-if (!dir.exists("outputs")) dir.create("outputs", recursive = TRUE, showWarnings = FALSE)
+cotra_default_output_dir <- function() {
+  file.path(path.expand("~"), "CoTRA_Results")
+}
+
+cotra_normalize_output_dir <- function(path) {
+  if (is.null(path) || length(path) == 0 || !nzchar(path[1])) {
+    path <- cotra_default_output_dir()
+  }
+  normalizePath(path.expand(path[1]), winslash = "/", mustWork = FALSE)
+}
+
+cotra_ensure_output_dir <- function(path) {
+  path <- cotra_normalize_output_dir(path)
+  if (!dir.exists(path)) {
+    dir.create(path, recursive = TRUE, showWarnings = FALSE)
+  }
+  if (!dir.exists(path)) {
+    stop("Could not create output folder: ", path)
+  }
+  path
+}
+
+cotra_get_output_dir <- function() {
+  if (exists("cotra_state", inherits = TRUE)) {
+    return(cotra_ensure_output_dir(cotra_state$output))
+  }
+  cotra_ensure_output_dir(cotra_default_output_dir())
+}
+
+cotra_module_output_dir <- function(...) {
+  out <- do.call(file.path, c(list(cotra_get_output_dir()), list(...)))
+  cotra_ensure_output_dir(out)
+}
+
+cotra_available_roots <- function() {
+  roots <- c(
+    Home = normalizePath(path.expand("~"), winslash = "/", mustWork = FALSE),
+    Working_Directory = normalizePath(getwd(), winslash = "/", mustWork = FALSE)
+  )
+  if (.Platform$OS.type == "windows") {
+    drives <- paste0(LETTERS, ":/")
+    drives <- drives[dir.exists(drives)]
+    if (length(drives) > 0) {
+      names(drives) <- paste0("Drive_", sub(":/", "", drives, fixed = TRUE))
+      roots <- c(roots, drives)
+    }
+  } else {
+    extra <- c(Root = "/", Tmp = tempdir())
+    extra <- extra[dir.exists(extra)]
+    roots <- c(roots, extra)
+  }
+  roots
+}
 
 # ======================================================
 #               REACTIVE STATE STORE
@@ -169,7 +221,7 @@ cotra_state <- reactiveValues(
   seurat_selected = NULL,
   parameters = list(),
   genes_list = list(),
-  output = "outputs"
+  output = cotra_default_output_dir()
 )
 
 # ======================================================
@@ -260,6 +312,36 @@ downPlotServer <- function(id, plot_obj, out_file = "plot") {
       }
     )
   })
+}
+
+# ======================================================
+#                 OUTPUT FILE NAME HELPERS
+# ======================================================
+
+cotra_timestamp <- function() {
+  format(Sys.time(), "%Y%m%d_%H%M%S")
+}
+
+cotra_sanitize_filename <- function(x) {
+  x <- as.character(x)
+  x <- gsub("[^A-Za-z0-9_.-]+", "_", x)
+  x <- gsub("_+", "_", x)
+  x <- gsub("^_|_$", "", x)
+  ifelse(nzchar(x), x, "CoTRA_output")
+}
+
+cotra_file_name <- function(label, ext, timestamp = cotra_timestamp()) {
+  ext <- sub("^\\.", "", as.character(ext))
+  paste0(cotra_sanitize_filename(label), "_", timestamp, ".", ext)
+}
+
+cotra_output_path <- function(output_dir, subdir = NULL, label, ext, timestamp = cotra_timestamp()) {
+  base_dir <- cotra_ensure_output_dir(output_dir)
+  if (!is.null(subdir) && nzchar(subdir)) {
+    base_dir <- file.path(base_dir, subdir)
+    dir.create(base_dir, recursive = TRUE, showWarnings = FALSE)
+  }
+  file.path(base_dir, cotra_file_name(label, ext, timestamp))
 }
 
 # ======================================================

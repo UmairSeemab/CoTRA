@@ -66,7 +66,7 @@ mod_sc_export_server <- function(id, seurat_in, markers_in, colors) {
     # ============================================================
     output$download_rds <- downloadHandler(
       filename = function() {
-        paste0(input$export_name, ".rds")
+        cotra_file_name(paste0("scRNA_SeuratObject_", input$export_name), "rds")
       },
       content = function(file) {
         seu <- seurat_in()
@@ -80,7 +80,7 @@ mod_sc_export_server <- function(id, seurat_in, markers_in, colors) {
     # ============================================================
     output$download_markers <- downloadHandler(
       filename = function() {
-        paste0(input$export_name, "_markers.csv")
+        cotra_file_name(paste0("scRNA_MarkerTable_", input$export_name), "csv")
       },
       content = function(file) {
         mk <- markers_in()
@@ -175,7 +175,7 @@ mod_sc_export_server <- function(id, seurat_in, markers_in, colors) {
     # ============================================================
     output$download_pdf <- downloadHandler(
       filename = function() {
-        paste0(input$export_name, "_report.pdf")
+        cotra_file_name(paste0("scRNA_Report_", input$export_name), "pdf")
       },
       content = function(file) {
         req(rv$pdf_ready)
