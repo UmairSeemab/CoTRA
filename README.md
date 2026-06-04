@@ -31,11 +31,4 @@ Windows, Ubuntu, and macOS users can install the package with the same R command
 
 External command-line tools such as FastQC, STAR, HTSeq, MultiQC, and Chrome or Chromium for PDF reports must be installed separately when those workflows are used.
 
-## Bioconductor preparation
-
-This package keeps reusable R functions under `R/` and the Shiny app under `inst/app/`. This layout is compatible with later Bioconductor preparation. Before Bioconductor submission, run:
-
-```r
-devtools::check()
-BiocCheck::BiocCheck()
 ```
