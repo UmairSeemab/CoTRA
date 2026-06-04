@@ -28,7 +28,3 @@ CoTRA::runCoTRA()
 ## Platform notes
 
 Windows, Ubuntu, and macOS users can install the package with the same R commands above.
-
-External command-line tools such as FastQC, STAR, HTSeq, MultiQC, and Chrome or Chromium for PDF reports must be installed separately when those workflows are used.
-
-```
