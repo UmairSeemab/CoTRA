@@ -111,6 +111,10 @@ mod_bulk_report_server <- function(id,
       status = "No report generated yet."
     )
     
+    # Shared timestamp used by all report output files generated in one run.
+    # It is updated inside generate_report_files() before plots/tables are saved.
+    report_timestamp <- cotra_timestamp()
+    
     observeEvent(input$help_toggle, {
       shinyjs::toggle(id = "help_box", anim = TRUE)
     })
@@ -672,7 +676,7 @@ mod_bulk_report_server <- function(id,
     }
     
     generate_report_files <- function() {
-      report_timestamp <- cotra_timestamp()
+      report_timestamp <<- cotra_timestamp()
       report_prefix <- paste0("CoTRA_BulkRNA_Report_", report_timestamp)
       report_dir <- file.path(cotra_module_output_dir("BulkRNA", "Reports"), report_prefix)
       if (!dir.exists(report_dir)) dir.create(report_dir, recursive = TRUE, showWarnings = FALSE)
