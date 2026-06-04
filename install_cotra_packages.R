@@ -1,0 +1,6 @@
+options(repos = c(CRAN = "https://cloud.r-project.org"), ask = FALSE, timeout = 1000)
+if (!requireNamespace("remotes", quietly = TRUE)) install.packages("remotes")
+remotes::install_github("UmairSeemab/CoTRA", dependencies = TRUE, upgrade = "never")
+library(CoTRA)
+CoTRA::install_cotra_dependencies(ask = FALSE)
+message("CoTRA installed. Start with: library(CoTRA); runCoTRA()")

@@ -1,0 +1,94 @@
+Package: CoTRA
+Type: Package
+Title: Comprehensive Toolbox for RNA Sequencing Data Analysis
+Version: 0.1.0
+Authors@R: person("Umair", "Seemab", email = "u.seemab@gmail.com", role = c("aut", "cre"))
+Description: Provides a Shiny graphical interface for bulk RNA-seq and single-cell RNA-seq analysis. CoTRA integrates data upload, quality control, differential expression, enrichment, annotation, clustering, trajectory analysis, and report generation workflows.
+License: GPL-3
+URL: https://github.com/UmairSeemab/CoTRA
+BugReports: https://github.com/UmairSeemab/CoTRA/issues
+Encoding: UTF-8
+LazyData: true
+Depends:
+    R (>= 4.4.0)
+Imports:
+    shiny,
+    utils
+Suggests:
+    shinyFiles,
+    shinydashboard,
+    bs4Dash,
+    shinyWidgets,
+    shinyjs,
+    plotly,
+    DT,
+    dplyr,
+    Seurat,
+    SeuratObject,
+    Matrix,
+    data.table,
+    ggplot2,
+    shinyalert,
+    clusterProfiler,
+    org.Hs.eg.db,
+    org.Mm.eg.db,
+    org.Rn.eg.db,
+    enrichplot,
+    knitr,
+    kableExtra,
+    scales,
+    stringr,
+    shinycssloaders,
+    svglite,
+    htmlwidgets,
+    fgsea,
+    msigdbr,
+    ReactomePA,
+    pathview,
+    rmarkdown,
+    SingleCellExperiment,
+    gridExtra,
+    cowplot,
+    sctransform,
+    DoubletFinder,
+    scDblFinder,
+    MAST,
+    corrplot,
+    CellChat,
+    monocle3,
+    SummarizedExperiment,
+    igraph,
+    slingshot,
+    mgcv,
+    UCell,
+    AUCell,
+    GSVA,
+    VISION,
+    pagedown,
+    celldex,
+    limma,
+    edgeR,
+    webshot2,
+    pheatmap,
+    RColorBrewer,
+    readr,
+    DESeq2,
+    tidyr,
+    openxlsx,
+    AnnotationDbi,
+    biomaRt,
+    GenomeInfoDb,
+    IRanges,
+    S4Vectors,
+    BiocGenerics,
+    ensembldb,
+    EnsDb.Hsapiens.v86,
+    EnsDb.Mmusculus.v79,
+    EnsDb.Rnorvegicus.v79,
+    testthat,
+    withr,
+    remotes,
+    BiocManager
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+BiocViews: Software, RNASeq, Transcriptomics, SingleCell, GeneExpression, DifferentialExpression, GUI, ShinyApps
