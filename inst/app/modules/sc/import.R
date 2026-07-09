@@ -4,11 +4,13 @@
 #
 # Production-ready import module for:
 # - CellRanger matrix folders/files
+# - 10x Genomics HDF5 matrices (.h5 / .hdf5)
 # - Seurat .rds objects from Seurat v4 or Seurat v5
 # - CoTRA scRNA project .rds files
 #
 # Features:
 # - Automatic CellRanger v2/v3/v4/v5-style file detection
+# - Direct 10x HDF5 import through Seurat::Read10X_h5
 # - Automatic Seurat object version/layer check
 # - RNA count layer validation for downstream compatibility
 # - Human/mouse/other species detection
@@ -39,6 +41,7 @@ mod_sc_import_ui <- function(id) {
             tags$h4("What you can upload"),
             tags$ul(
               tags$li(tags$b("CellRanger output:"), " upload the three matrix files: matrix.mtx or matrix.mtx.gz, barcodes.tsv or barcodes.tsv.gz, and features.tsv/genes.tsv or their gzipped versions."),
+              tags$li(tags$b("10x Genomics HDF5:"), " upload a single CellRanger .h5 or .hdf5 matrix file such as filtered_feature_bc_matrix.h5 or raw_feature_bc_matrix.h5."),
               tags$li(tags$b("Seurat object:"), " upload a .rds file containing a valid Seurat object."),
               tags$li(tags$b("CoTRA project:"), " upload a .rds file saved by CoTRA. It should contain a Seurat object and optional project/cell metadata.")
             ),
@@ -48,6 +51,13 @@ mod_sc_import_ui <- function(id) {
               tags$li(tags$b("CellRanger v2:"), " commonly uses genes.tsv, barcodes.tsv, and matrix.mtx."),
               tags$li(tags$b("CellRanger v3 or newer:"), " commonly uses features.tsv.gz, barcodes.tsv.gz, and matrix.mtx.gz."),
               tags$li(tags$b("CellRanger v4/v5:"), " uses the same matrix exchange structure as v3 for filtered_feature_bc_matrix. CoTRA treats these as suitable if RNA features are found.")
+            ),
+            tags$h4("10x HDF5 compatibility"),
+            tags$ul(
+              tags$li("CoTRA reads 10x CellRanger HDF5 count matrices with Seurat::Read10X_h5."),
+              tags$li("If the H5 file contains multiple feature types, CoTRA uses Gene Expression as the RNA assay and can add Antibody Capture as ADT and Multiplexing Capture as HTO when present."),
+              tags$li("10x CellRanger .h5 files are count matrices. They are different from .h5Seurat and .h5ad object files."),
+              tags$li("raw_feature_bc_matrix.h5 can be imported, but filtered_feature_bc_matrix.h5 is recommended for routine analysis because raw matrices may contain many empty droplets.")
             ),
             tags$h4("Seurat v4/v5 compatibility"),
             tags$ul(
@@ -63,7 +73,7 @@ mod_sc_import_ui <- function(id) {
               tags$li("If species cannot be detected, choose Human, Mouse, or Other from Species override before normalization.")
             ),
             tags$h4("Recommended input"),
-            tags$p("For a new analysis, upload raw CellRanger filtered_feature_bc_matrix files. For continuing an old analysis, upload a Seurat .rds or CoTRA project .rds.")
+            tags$p("For a new analysis, upload CellRanger filtered_feature_bc_matrix files or filtered_feature_bc_matrix.h5. For continuing an old analysis, upload a Seurat .rds or CoTRA project .rds.")
           )
         )
       )
@@ -82,6 +92,7 @@ mod_sc_import_ui <- function(id) {
             label = "Select input type",
             choices = c(
               "CellRanger output" = "cellranger",
+              "10x Genomics HDF5 (.h5)" = "h5",
               "Seurat R object (.rds)" = "rds",
               "CoTRA project (.rds)" = "cotra"
             ),
@@ -140,6 +151,45 @@ mod_sc_import_ui <- function(id) {
               "ADT files, optional",
               multiple = TRUE,
               accept = c(".mtx", ".gz", ".tsv")
+            )
+          )
+        )
+      )
+    ),
+    
+    conditionalPanel(
+      condition = "input.type_import == 'h5'",
+      ns = ns,
+      fluidRow(
+        column(
+          width = 6,
+          bs4Card(
+            title = "10x Genomics HDF5 matrix",
+            status = "primary",
+            solidHeader = TRUE,
+            width = 12,
+            helpText("Upload one 10x CellRanger HDF5 file, for example filtered_feature_bc_matrix.h5."),
+            fileInput(
+              ns("h5file"),
+              "Upload 10x HDF5 file",
+              multiple = FALSE,
+              accept = c(".h5", ".hdf5")
+            ),
+            helpText("This option is for CellRanger count-matrix H5 files. It is not for .h5ad or .h5Seurat object files.")
+          )
+        ),
+        column(
+          width = 6,
+          bs4Card(
+            title = "H5 import behavior",
+            status = "info",
+            solidHeader = TRUE,
+            width = 12,
+            tags$ul(
+              tags$li("Gene Expression is imported as the RNA assay."),
+              tags$li("Antibody Capture is imported as ADT when present."),
+              tags$li("Multiplexing Capture is imported as HTO when present."),
+              tags$li("Use filtered_feature_bc_matrix.h5 for standard analysis when available.")
             )
           )
         )
@@ -320,20 +370,145 @@ mod_sc_import_server <- function(id) {
       list(ok = TRUE, mat = mat, version = check$version, message = check$message)
     }
     
+    get_named_matrix <- function(mat, possible_names) {
+      if (!is.list(mat)) return(mat)
+      if (is.null(names(mat))) return(mat[[1]])
+      
+      lower_names <- tolower(names(mat))
+      lower_possible <- tolower(possible_names)
+      hit <- match(lower_possible, lower_names, nomatch = 0)
+      hit <- hit[hit > 0]
+      if (length(hit) > 0) return(mat[[hit[1]]])
+      
+      NULL
+    }
+    
     choose_rna_matrix <- function(mat) {
       if (!is.list(mat)) return(mat)
       
-      possible_names <- c(
-        "Gene Expression",
-        "gene expression",
-        "RNA",
-        "RNA Gene Expression"
+      rna <- get_named_matrix(
+        mat,
+        c(
+          "Gene Expression",
+          "gene expression",
+          "RNA",
+          "RNA Gene Expression"
+        )
       )
       
-      hit <- intersect(possible_names, names(mat))
-      if (length(hit) > 0) return(mat[[hit[1]]])
-      
+      if (!is.null(rna)) return(rna)
       mat[[1]]
+    }
+    
+    choose_adt_matrix <- function(mat) {
+      get_named_matrix(
+        mat,
+        c(
+          "Antibody Capture",
+          "Antibody capture",
+          "ADT",
+          "Protein Expression",
+          "Protein expression"
+        )
+      )
+    }
+    
+    choose_hto_matrix <- function(mat) {
+      get_named_matrix(
+        mat,
+        c(
+          "Multiplexing Capture",
+          "Multiplexing capture",
+          "HTO",
+          "Hashtag",
+          "Hashtag Oligos"
+        )
+      )
+    }
+    
+    matrix_is_nonempty <- function(mat) {
+      !is.null(mat) && !is.list(mat) && nrow(mat) > 0 && ncol(mat) > 0
+    }
+    
+    add_assay_from_matrix <- function(seu, mat, assay_name, normalize_clr = FALSE) {
+      if (!matrix_is_nonempty(mat)) return(list(seu = seu, added = FALSE, message = paste(assay_name, "matrix is empty or unavailable.")))
+      
+      common <- intersect(colnames(mat), colnames(seu))
+      if (length(common) < 10) {
+        return(list(
+          seu = seu,
+          added = FALSE,
+          message = paste("Only", length(common), "overlapping barcodes were found between RNA and", assay_name, ".")
+        ))
+      }
+      
+      if (length(common) < ncol(seu)) {
+        seu <- subset(seu, cells = common)
+      }
+      
+      mat <- mat[, colnames(seu), drop = FALSE]
+      seu[[assay_name]] <- Seurat::CreateAssayObject(counts = mat)
+      
+      if (isTRUE(normalize_clr)) {
+        seu <- Seurat::NormalizeData(seu, assay = assay_name, normalization.method = "CLR", margin = 2, verbose = FALSE)
+      }
+      
+      list(seu = seu, added = TRUE, message = paste(assay_name, "assay added with", nrow(mat), "features."))
+    }
+    
+    read_10x_h5_file <- function(path, original_name = NULL) {
+      if (is.null(path) || !file.exists(path)) {
+        return(list(ok = FALSE, message = "No H5 file was uploaded."))
+      }
+      
+      if (!requireNamespace("hdf5r", quietly = TRUE)) {
+        return(list(
+          ok = FALSE,
+          message = "The hdf5r package is required for Seurat::Read10X_h5. Install hdf5r and try again."
+        ))
+      }
+      
+      mat <- tryCatch(
+        Seurat::Read10X_h5(
+          filename = path,
+          use.names = TRUE,
+          unique.features = TRUE
+        ),
+        error = function(e) e
+      )
+      
+      if (inherits(mat, "error")) {
+        return(list(ok = FALSE, message = paste("Read10X_h5 failed:", conditionMessage(mat))))
+      }
+      
+      mat_names <- if (is.list(mat) && !is.null(names(mat))) names(mat) else "Gene Expression"
+      mat_rna <- choose_rna_matrix(mat)
+      
+      if (!matrix_is_nonempty(mat_rna)) {
+        return(list(ok = FALSE, message = "The H5 file was read, but no non-empty Gene Expression matrix was detected."))
+      }
+      
+      filename <- if (!is.null(original_name) && nzchar(original_name)) basename(original_name) else basename(path)
+      version <- "10x Genomics CellRanger HDF5"
+      message <- paste0(
+        "Detected ", version, "; file: ", filename,
+        "; feature groups: ", paste(mat_names, collapse = ", "),
+        "; RNA cells: ", ncol(mat_rna),
+        "; RNA features: ", nrow(mat_rna),
+        "."
+      )
+      
+      list(
+        ok = TRUE,
+        mat = mat,
+        rna = mat_rna,
+        adt = choose_adt_matrix(mat),
+        hto = choose_hto_matrix(mat),
+        version = version,
+        message = message,
+        filename = filename,
+        feature_groups = mat_names
+      )
     }
     
     detect_species <- function(seu) {
@@ -471,7 +646,7 @@ mod_sc_import_server <- function(id) {
           "Features",
           "Assays",
           "Detected species",
-          "CellRanger format",
+          "Input matrix format",
           "Seurat check",
           "Suitable for downstream",
           "Median nCount_RNA",
@@ -510,7 +685,7 @@ mod_sc_import_server <- function(id) {
       )
       
       if (!is.null(rv$cellranger_version)) {
-        status <- paste0(status, "<b>CellRanger check:</b> ", rv$cellranger_version, "<br>")
+        status <- paste0(status, "<b>Input format check:</b> ", rv$cellranger_version, "<br>")
       }
       
       if (!is.null(rv$seurat_version)) {
@@ -585,6 +760,83 @@ mod_sc_import_server <- function(id) {
       })
     })
     
+    # -------------------- 10x HDF5 import --------------------
+    
+    observeEvent(input$h5file, {
+      req(input$h5file)
+      
+      withProgress(message = "Importing 10x HDF5 file", value = 0, {
+        incProgress(0.2)
+        
+        res <- read_10x_h5_file(input$h5file$datapath, input$h5file$name)
+        if (!isTRUE(res$ok)) {
+          show_import_error("H5 file import failed", res$message)
+          rv$seu <- NULL
+          rv$imported <- FALSE
+          return(NULL)
+        }
+        
+        incProgress(0.45, detail = "Creating Seurat object")
+        
+        seu <- Seurat::CreateSeuratObject(
+          counts = res$rna,
+          assay = "RNA",
+          project = "CoTRA_scRNA_H5"
+        )
+        
+        incProgress(0.65, detail = "Adding optional modalities")
+        
+        adt_added <- FALSE
+        hto_added <- FALSE
+        extra_messages <- character(0)
+        
+        if (matrix_is_nonempty(res$adt)) {
+          adt_res <- add_assay_from_matrix(seu, res$adt, "ADT", normalize_clr = TRUE)
+          seu <- adt_res$seu
+          adt_added <- isTRUE(adt_res$added)
+          extra_messages <- c(extra_messages, adt_res$message)
+        }
+        
+        if (matrix_is_nonempty(res$hto)) {
+          hto_res <- add_assay_from_matrix(seu, res$hto, "HTO", normalize_clr = FALSE)
+          seu <- hto_res$seu
+          hto_added <- isTRUE(hto_res$added)
+          extra_messages <- c(extra_messages, hto_res$message)
+        }
+        
+        incProgress(0.8, detail = "Calculating QC metrics")
+        
+        seu <- set_species_and_qc(seu, species_override = "auto")
+        
+        rv$seu <- seu
+        rv$input_check <- res$message
+        rv$cellranger_version <- res$version
+        rv$seurat_version <- "Created from 10x HDF5 matrix"
+        rv$seurat_suitable <- TRUE
+        rv$imported <- TRUE
+        rv$normalized <- FALSE
+        rv$hto <- hto_added
+        rv$adt <- adt_added
+        rv$messages <- character(0)
+        
+        add_message(res$message)
+        
+        if (length(extra_messages) > 0) {
+          for (msg in extra_messages) add_message(msg)
+        }
+        
+        if (grepl("raw_feature_bc_matrix", res$filename, ignore.case = TRUE)) {
+          add_message("Warning: this looks like a raw 10x matrix. It may contain many empty droplets. filtered_feature_bc_matrix.h5 is recommended for routine CoTRA analysis.")
+        }
+        
+        if (detect_species(seu) == "other") {
+          add_message("Species could not be confidently detected. Use Species override before normalization.")
+        }
+        
+        incProgress(1)
+      })
+    })
+    
     # -------------------- HTO / ADT import --------------------
     
     add_modality_assay <- function(files_df, assay_name, normalize_clr = FALSE) {
@@ -597,29 +849,19 @@ mod_sc_import_server <- function(id) {
       }
       
       mat <- choose_rna_matrix(res$mat)
-      if (is.null(mat) || nrow(mat) == 0 || ncol(mat) == 0) {
+      if (!matrix_is_nonempty(mat)) {
         show_import_error(paste(assay_name, "matrix error"), "Could not identify a non-empty matrix.")
         return(NULL)
       }
       
-      common <- intersect(colnames(mat), colnames(rv$seu))
-      if (length(common) < 10) {
-        show_import_error(
-          paste(assay_name, "barcode mismatch"),
-          paste("Only", length(common), "overlapping barcodes were found between RNA and", assay_name, ".")
-        )
+      assay_res <- add_assay_from_matrix(rv$seu, mat, assay_name, normalize_clr = normalize_clr)
+      if (!isTRUE(assay_res$added)) {
+        show_import_error(paste(assay_name, "barcode mismatch"), assay_res$message)
         return(NULL)
       }
       
-      seu <- subset(rv$seu, cells = common)
-      mat <- mat[, common, drop = FALSE]
-      seu[[assay_name]] <- Seurat::CreateAssayObject(counts = mat)
-      
-      if (isTRUE(normalize_clr)) {
-        seu <- Seurat::NormalizeData(seu, assay = assay_name, normalization.method = "CLR", margin = 2)
-      }
-      
-      rv$seu <- seu
+      rv$seu <- assay_res$seu
+      add_message(assay_res$message)
       TRUE
     }
     
@@ -787,6 +1029,7 @@ mod_sc_import_server <- function(id) {
             tags$li(tags$b("Features:"), " total number of genes or measured features."),
             tags$li(tags$b("Assays:"), " available data layers such as RNA, ADT, or HTO."),
             tags$li(tags$b("Detected species:"), " inferred from mitochondrial and ribosomal gene naming."),
+            tags$li(tags$b("Input matrix format:"), " shows whether data were loaded from CellRanger matrix files, 10x HDF5, Seurat RDS, or CoTRA project."),
             tags$li(tags$b("Suitable for downstream:"), " shows whether RNA counts were detected for QC, normalization, and clustering.")
           ),
           tags$h5("How to interpret the QC plots"),
