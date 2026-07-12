@@ -155,7 +155,7 @@ ui <- bs4DashPage(
             verbatimTextOutput("global_output_dir_text"),
             hr(),
             h4("Workflow Overview"),
-            tags$img(src="cotra_flowchart.svg", width="100%",
+            tags$img(src="cotra_flowchart.png", width="100%",
                      style="border:1px solid #ccc; padding:8px; border-radius:6px;")
           )
         )
