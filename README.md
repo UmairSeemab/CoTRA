@@ -1,4 +1,5 @@
-Note: Make sure you have latest version of R installed before installing CoTRA
+# Note before installation  
+Make sure you have latest version of R installed before installing CoTRA
 
 # CoTRA
 
