@@ -1,3 +1,6 @@
+# Note before installation
+Make sure you have latest version of R installed before installing CoTRA
+
 # CoTRA
 
 CoTRA, Comprehensive Toolbox for RNA Sequencing Data Analysis, is a Shiny-based graphical interface for bulk RNA-seq and single-cell RNA-seq workflows.
