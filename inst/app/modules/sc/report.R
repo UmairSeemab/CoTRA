@@ -72,6 +72,7 @@ mod_sc_report_ui <- function(id) {
             "Clustering" = "clustering",
             "Markers" = "markers",
             "Annotation" = "annotation",
+            "Differential expression" = "differential_expression",
             "Trajectory" = "trajectory",
             "Pathway activity" = "pathway",
             "Cell communication" = "communication",
@@ -86,6 +87,7 @@ mod_sc_report_ui <- function(id) {
             "clustering",
             "markers",
             "annotation",
+            "differential_expression",
             "trajectory",
             "pathway",
             "communication",
@@ -151,6 +153,7 @@ mod_sc_report_ui <- function(id) {
               tags$li("Run clustering"),
               tags$li("Find markers"),
               tags$li("Run annotation"),
+              tags$li("Optionally compare conditions using differential expression"),
               tags$li("Optionally run trajectory, pathway activity, and cell communication"),
               tags$li("Generate report")
             ),
@@ -177,6 +180,7 @@ mod_sc_report_server <- function(
     sc_state = NULL,
     sc_markers = NULL,
     sc_annot = NULL,
+    sc_de = NULL,
     sc_trajectory = NULL,
     sc_pathway = NULL,
     sc_comm = NULL,
@@ -212,6 +216,7 @@ mod_sc_report_server <- function(
       
       md_cols <- if (!is.null(obj)) colnames(obj@meta.data) else character(0)
       reductions <- if (!is.null(obj)) names(obj@reductions) else character(0)
+      de_ready <- !is.null(safe_value(sc_de$results(), NULL))
       
       data.frame(
         Module = c(
@@ -223,6 +228,7 @@ mod_sc_report_server <- function(
           "Clustering",
           "Markers",
           "Annotation",
+          "Differential Expression",
           "Trajectory",
           "Pathway Activity",
           "Cell Communication"
@@ -236,6 +242,7 @@ mod_sc_report_server <- function(
           if (any(c("seurat_clusters", "CoTRA_cluster_label") %in% md_cols)) "Available" else "Missing",
           if (!is.null(sc_markers)) "Available if completed" else "Not connected",
           if ("CoTRA_celltype" %in% md_cols) "Available" else "Missing",
+          if (isTRUE(de_ready)) "Available" else if (!is.null(sc_de)) "Not completed" else "Not connected",
           if (!is.null(sc_trajectory)) "Available if completed" else "Not connected",
           if (!is.null(sc_pathway)) "Available if completed" else "Not connected",
           if (!is.null(sc_comm)) "Available if completed" else "Not connected"
@@ -301,23 +308,33 @@ mod_sc_report_server <- function(
       
       withProgress(message = "Generating scRNA report", value = 0, {
         
-        incProgress(0.2, detail = "Saving figures")
-        
-        figure_files <- create_sc_report_figures(
-          obj = obj,
-          fig_dir = fig_dir,
-          include_figures = isTRUE(input$include_figures)
-        )
-        
-        incProgress(0.45, detail = "Collecting report data")
+        incProgress(0.2, detail = "Collecting report data")
         
         report_data <- collect_sc_report_data(
           obj = obj,
           sc_markers = sc_markers,
           sc_annot = sc_annot,
+          sc_de = sc_de,
           sc_trajectory = sc_trajectory,
           sc_pathway = sc_pathway,
           sc_comm = sc_comm
+        )
+
+        if (!is.null(report_data$de_results) && nrow(report_data$de_results) > 0) {
+          utils::write.csv(
+            report_data$de_results,
+            file.path(run_dir, "scRNA_differential_expression_results.csv"),
+            row.names = FALSE
+          )
+        }
+        
+        incProgress(0.45, detail = "Saving figures")
+        
+        figure_files <- create_sc_report_figures(
+          obj = obj,
+          fig_dir = fig_dir,
+          include_figures = isTRUE(input$include_figures),
+          sc_de = sc_de
         )
         
         incProgress(0.6, detail = "Writing report template")
@@ -446,6 +463,7 @@ collect_sc_report_data <- function(
     obj,
     sc_markers = NULL,
     sc_annot = NULL,
+    sc_de = NULL,
     sc_trajectory = NULL,
     sc_pathway = NULL,
     sc_comm = NULL
@@ -454,6 +472,9 @@ collect_sc_report_data <- function(
   
   marker_table <- tryCatch(sc_markers$markers_table(), error = function(e) NULL)
   annotation_table <- tryCatch(sc_annot$annotation_table(), error = function(e) NULL)
+  de_results <- tryCatch(sc_de$results(), error = function(e) NULL)
+  de_info <- tryCatch(sc_de$analysis_info(), error = function(e) NULL)
+  de_design <- tryCatch(sc_de$design(), error = function(e) NULL)
   trajectory_path <- tryCatch(sc_trajectory$session_path(), error = function(e) NULL)
   pathway_ready <- tryCatch(sc_pathway$pathway_ready(), error = function(e) NULL)
   communication_ready <- tryCatch(sc_comm$comm_ready(), error = function(e) NULL)
@@ -469,13 +490,16 @@ collect_sc_report_data <- function(
     celltypes = if ("CoTRA_celltype" %in% colnames(md)) length(unique(md$CoTRA_celltype)) else NA,
     marker_table = marker_table,
     annotation_table = annotation_table,
+    de_results = de_results,
+    de_info = de_info,
+    de_design = de_design,
     trajectory_path = trajectory_path,
     pathway_ready = pathway_ready,
     communication_ready = communication_ready
   )
 }
 
-create_sc_report_figures <- function(obj, fig_dir, include_figures = TRUE) {
+create_sc_report_figures <- function(obj, fig_dir, include_figures = TRUE, sc_de = NULL) {
   if (!isTRUE(include_figures)) {
     return(list())
   }
@@ -545,6 +569,68 @@ create_sc_report_figures <- function(obj, fig_dir, include_figures = TRUE) {
     ggplot2::ggsave(f, p, width = 8, height = 6, dpi = 150)
     figs$tsne <- f
   }
+
+  de_results <- tryCatch(sc_de$results(), error = function(e) NULL)
+  de_info <- tryCatch(sc_de$analysis_info(), error = function(e) NULL)
+  
+  if (!is.null(de_results) && nrow(de_results) > 0 && !is.null(de_info)) {
+    plot_df <- de_results
+    plot_df$plot_p <- plot_df$p_adj
+    plot_df$plot_p[is.na(plot_df$plot_p)] <- 1
+    plot_df$plot_p <- pmax(plot_df$plot_p, .Machine$double.xmin)
+    plot_df$minus_log10_padj <- -log10(plot_df$plot_p)
+    plot_df$hover_text <- paste0(
+      "Gene: ", plot_df$gene,
+      "<br>log2FC: ", signif(plot_df$log2FC, 4),
+      "<br>Adjusted P-value: ", format(plot_df$p_adj, digits = 4, scientific = TRUE),
+      "<br>Direction: ", plot_df$direction
+    )
+    
+    p <- ggplot2::ggplot(
+      plot_df,
+      ggplot2::aes(x = log2FC, y = minus_log10_padj, colour = direction, text = hover_text)
+    ) +
+      ggplot2::geom_point(alpha = 0.70, size = 1.5, na.rm = TRUE) +
+      ggplot2::geom_vline(
+        xintercept = c(-de_info$log2fc_cutoff, de_info$log2fc_cutoff),
+        linetype = 2,
+        inherit.aes = FALSE
+      ) +
+      ggplot2::geom_hline(
+        yintercept = -log10(de_info$fdr_cutoff),
+        linetype = 2,
+        inherit.aes = FALSE
+      ) +
+      ggplot2::labs(
+        title = paste0(de_info$group1, " versus ", de_info$group2),
+        subtitle = de_info$method,
+        x = paste0("log2 fold change, positive = higher in ", de_info$group1),
+        y = "-log10 adjusted P-value",
+        colour = "Result"
+      ) +
+      ggplot2::theme_bw(base_size = 12)
+    
+    f <- file.path(fig_dir, cotra_file_name("scRNA_DE_VolcanoPlot", "png"))
+    ggplot2::ggsave(f, p, width = 8, height = 7, dpi = 300)
+    figs$de_volcano <- f
+
+    if (requireNamespace("plotly", quietly = TRUE) && requireNamespace("htmlwidgets", quietly = TRUE)) {
+      widget <- plotly::ggplotly(p, tooltip = "text", dynamicTicks = TRUE) |>
+        plotly::layout(
+          hovermode = "closest",
+          legend = list(orientation = "h", x = 0, y = -0.18),
+          margin = list(b = 100)
+        ) |>
+        plotly::config(displaylogo = FALSE, responsive = TRUE)
+
+      f_html <- file.path(fig_dir, cotra_file_name("scRNA_DE_InteractiveVolcanoPlot", "html"))
+      widget_saved <- tryCatch({
+        htmlwidgets::saveWidget(widget, f_html, selfcontained = TRUE)
+        file.exists(f_html)
+      }, error = function(e) FALSE)
+      if (isTRUE(widget_saved)) figs$de_volcano_interactive <- f_html
+    }
+  }
   
   figs
 }
@@ -568,12 +654,44 @@ write_sc_report_rmd <- function(
     if (is.null(x) || !file.exists(x)) return(NULL)
     paste0("![](figures/", basename(x), ")")
   }
+
+  report_iframe <- function(x) {
+    if (is.null(x) || !file.exists(x)) return(NULL)
+    paste0(
+      '<iframe src="figures/', basename(x),
+      '" width="100%" height="680" style="border:1px solid #ddd;"></iframe>'
+    )
+  }
   
   esc <- function(x) {
     x <- as.character(x)
     x <- gsub("\\\\", "/", x)
     x <- gsub('"', "'", x)
     x
+  }
+  
+  markdown_table <- function(df, max_rows = 20) {
+    if (is.null(df) || nrow(df) == 0) return(character(0))
+    preferred <- c("gene", "log2FC", "pct.1", "pct.2", "p_value", "p_adj", "direction")
+    cols <- preferred[preferred %in% colnames(df)]
+    if (length(cols) == 0) cols <- head(colnames(df), 7)
+    tab <- head(df[, cols, drop = FALSE], max_rows)
+
+    format_cell <- function(x) {
+      if (length(x) == 0 || is.na(x)) return("")
+      if (is.numeric(x)) {
+        if (abs(x) > 0 && abs(x) < 0.001) return(format(x, scientific = TRUE, digits = 3))
+        return(format(round(x, 4), trim = TRUE, scientific = FALSE))
+      }
+      gsub("\\|", "\\\\|", as.character(x))
+    }
+
+    header <- paste0("| ", paste(cols, collapse = " | "), " |")
+    separator <- paste0("| ", paste(rep("---", length(cols)), collapse = " | "), " |")
+    rows <- apply(tab, 1, function(row) {
+      paste0("| ", paste(vapply(row, format_cell, character(1)), collapse = " | "), " |")
+    })
+    c(header, separator, rows)
   }
   
   lines <- c(
@@ -704,6 +822,67 @@ write_sc_report_rmd <- function(
       },
       ""
     )
+  }
+  
+  if ("differential_expression" %in% sections) {
+    de_img <- report_img(figure_files$de_volcano)
+    de_interactive <- report_iframe(figure_files$de_volcano_interactive)
+    de_info <- report_data$de_info
+    de_results <- report_data$de_results
+
+    if (!is.null(de_info) && !is.null(de_results) && nrow(de_results) > 0) {
+      significant <- sum(
+        !is.na(de_results$p_adj) &
+          de_results$p_adj <= de_info$fdr_cutoff &
+          abs(de_results$log2FC) >= de_info$log2fc_cutoff,
+        na.rm = TRUE
+      )
+      higher_group1 <- sum(de_results$direction == paste0("Higher in ", de_info$group1), na.rm = TRUE)
+      higher_group2 <- sum(de_results$direction == paste0("Higher in ", de_info$group2), na.rm = TRUE)
+
+      lines <- c(
+        lines,
+        "## Differential expression",
+        "",
+        paste0("- Method: ", esc(de_info$method)),
+        paste0("- Contrast: ", esc(de_info$group1), " versus ", esc(de_info$group2)),
+        paste0("- Subset: ", esc(de_info$subset_value)),
+        paste0("- Cells included: ", de_info$selected_cells),
+        paste0("- Biological samples represented: ", de_info$samples),
+        paste0("- Genes tested: ", de_info$tested_genes),
+        paste0("- Significant genes: ", significant),
+        paste0("- Higher in ", esc(de_info$group1), ": ", higher_group1),
+        paste0("- Higher in ", esc(de_info$group2), ": ", higher_group2),
+        "",
+        if (!is.null(de_info$warning) && nzchar(de_info$warning)) paste0("Interpretation: ", esc(de_info$warning)) else "",
+        "",
+        if (!is.null(de_interactive)) "### Interactive volcano plot" else "",
+        if (!is.null(de_interactive)) de_interactive else "",
+        "",
+        "### Static volcano plot",
+        "",
+        if (!is.null(de_img)) de_img else "Differential-expression volcano figure not available.",
+        ""
+      )
+
+      if (isTRUE(include_tables)) {
+        lines <- c(
+          lines,
+          "### Top differential-expression results",
+          "",
+          markdown_table(de_results, max_rows = 20),
+          ""
+        )
+      }
+    } else {
+      lines <- c(
+        lines,
+        "## Differential expression",
+        "",
+        "Differential-expression results were not available. Run the Differential Expression module before generating the report.",
+        ""
+      )
+    }
   }
   
   if ("trajectory" %in% sections) {

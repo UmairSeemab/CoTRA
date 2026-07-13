@@ -35,6 +35,7 @@ source("modules/sc/markers.R")
 # source("modules/sc/featureplots.R")
 # source("modules/sc/feature_viewer.R")
 source("modules/sc/annotation.R")
+source("modules/sc/de_expression.R")
 #source("modules/sc/differential_abundance.R")
 source("modules/sc/trajectory.R")
 source("modules/sc/pathway_activity.R")
@@ -107,6 +108,7 @@ ui <- bs4DashPage(
         #bs4SidebarMenuSubItem("Subset + Recluster", tabName = "sc_subset", icon = icon("crop")),
         bs4SidebarMenuSubItem("Markers", tabName = "sc_markers", icon = icon("bolt")),
         bs4SidebarMenuSubItem("Annotation", tabName = "sc_annot", icon = icon("tags")),
+        bs4SidebarMenuSubItem("Differential Expression", tabName = "sc_de", icon = icon("chart-line")),
         #bs4SidebarMenuSubItem("Differential Abundance", tabName = "sc_da", icon = icon("chart-bar")),
         #bs4SidebarMenuSubItem("Feature Plots", tabName = "sc_featureplots", icon = icon("palette")),
         #bs4SidebarMenuSubItem("Marker Viewer", tabName = "sc_feature", icon = icon("eye")),
@@ -193,6 +195,9 @@ ui <- bs4DashPage(
       
       # Annotation
       bs4TabItem("sc_annot", mod_sc_annotation_ui("sc_annot")),
+
+      # Differential Expression
+      bs4TabItem("sc_de", mod_sc_de_ui("sc_de")),
       
       # Differential Abundance
       #bs4TabItem("sc_da", mod_sc_differential_abundance_ui("sc_da")),

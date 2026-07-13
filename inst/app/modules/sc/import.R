@@ -41,7 +41,7 @@ mod_sc_import_ui <- function(id) {
             tags$h4("What you can upload"),
             tags$ul(
               tags$li(tags$b("CellRanger output:"), " upload the three matrix files: matrix.mtx or matrix.mtx.gz, barcodes.tsv or barcodes.tsv.gz, and features.tsv/genes.tsv or their gzipped versions."),
-              tags$li(tags$b("10x Genomics HDF5:"), " upload a single CellRanger .h5 or .hdf5 matrix file such as filtered_feature_bc_matrix.h5 or raw_feature_bc_matrix.h5."),
+              tags$li(tags$b("10x Genomics HDF5:"), " upload one or more CellRanger .h5 or .hdf5 matrix files. Each H5 file is treated as one biological sample."),
               tags$li(tags$b("Seurat object:"), " upload a .rds file containing a valid Seurat object."),
               tags$li(tags$b("CoTRA project:"), " upload a .rds file saved by CoTRA. It should contain a Seurat object and optional project/cell metadata.")
             ),
@@ -54,7 +54,9 @@ mod_sc_import_ui <- function(id) {
             ),
             tags$h4("10x HDF5 compatibility"),
             tags$ul(
-              tags$li("CoTRA reads 10x CellRanger HDF5 count matrices with Seurat::Read10X_h5."),
+              tags$li("CoTRA reads one or more 10x CellRanger HDF5 count matrices with Seurat::Read10X_h5."),
+              tags$li("For multiple files, assign a unique sample ID and condition to every file before import."),
+              tags$li("Cell barcodes are prefixed with the sample ID and RNA matrices are combined before one Seurat object is created."),
               tags$li("If the H5 file contains multiple feature types, CoTRA uses Gene Expression as the RNA assay and can add Antibody Capture as ADT and Multiplexing Capture as HTO when present."),
               tags$li("10x CellRanger .h5 files are count matrices. They are different from .h5Seurat and .h5ad object files."),
               tags$li("raw_feature_bc_matrix.h5 can be imported, but filtered_feature_bc_matrix.h5 is recommended for routine analysis because raw matrices may contain many empty droplets.")
@@ -162,33 +164,50 @@ mod_sc_import_ui <- function(id) {
       ns = ns,
       fluidRow(
         column(
-          width = 6,
+          width = 7,
           bs4Card(
-            title = "10x Genomics HDF5 matrix",
+            title = "10x Genomics HDF5 matrices",
             status = "primary",
             solidHeader = TRUE,
             width = 12,
-            helpText("Upload one 10x CellRanger HDF5 file, for example filtered_feature_bc_matrix.h5."),
+            helpText("Upload one or more 10x CellRanger HDF5 files. Each file is treated as one biological sample."),
             fileInput(
               ns("h5file"),
-              "Upload 10x HDF5 file",
-              multiple = FALSE,
+              "Upload 10x HDF5 file(s)",
+              multiple = TRUE,
               accept = c(".h5", ".hdf5")
             ),
-            helpText("This option is for CellRanger count-matrix H5 files. It is not for .h5ad or .h5Seurat object files.")
+            helpText("This option is for CellRanger count-matrix H5 files. It is not for .h5ad or .h5Seurat object files."),
+            uiOutput(ns("h5_sample_setup")),
+            checkboxInput(
+              ns("h5_import_modalities"),
+              "Also import ADT/HTO assays when present",
+              value = FALSE
+            ),
+            helpText("Keep this unchecked for RNA-only datasets. It lowers peak memory use during multi-sample import."),
+            br(),
+            actionButton(
+              ns("import_h5"),
+              "Import H5 sample(s)",
+              icon = icon("file-import"),
+              class = "btn-primary"
+            )
           )
         ),
         column(
-          width = 6,
+          width = 5,
           bs4Card(
             title = "H5 import behavior",
             status = "info",
             solidHeader = TRUE,
             width = 12,
             tags$ul(
+              tags$li("Every H5 file is treated as one biological sample."),
+              tags$li("Sample IDs and conditions can be edited before import."),
+              tags$li("Cell barcodes are prefixed with the sample ID to prevent duplicate cell names."),
+              tags$li("RNA matrices are combined before one Seurat object is created, preserving a single RNA counts layer."),
               tags$li("Gene Expression is imported as the RNA assay."),
-              tags$li("Antibody Capture is imported as ADT when present."),
-              tags$li("Multiplexing Capture is imported as HTO when present."),
+              tags$li("ADT or HTO assays are combined only when all samples contain the same modality with matching features."),
               tags$li("Use filtered_feature_bc_matrix.h5 for standard analysis when available.")
             )
           )
@@ -264,6 +283,7 @@ mod_sc_import_server <- function(id) {
       cells_meta = NULL,
       imported = FALSE,
       normalized = FALSE,
+      h5_sample_map = NULL,
       messages = character(0)
     )
     
@@ -297,6 +317,128 @@ mod_sc_import_server <- function(id) {
     
     show_import_error <- function(title, message) {
       showModal(modalDialog(title = title, message, easyClose = TRUE))
+    }
+
+    default_h5_sample_id <- function(filename) {
+      if (is.null(filename) || !nzchar(filename)) filename <- "sample"
+      x <- basename(filename)
+      x <- sub("\\.(h5|hdf5)$", "", x, ignore.case = TRUE)
+      x <- sub("_(filtered|raw)_feature_bc_matrix$", "", x, ignore.case = TRUE)
+      x <- sub("^(filtered|raw)_feature_bc_matrix$", "sample", x, ignore.case = TRUE)
+      x <- gsub("[^A-Za-z0-9_.-]+", "_", x)
+      x <- gsub("^_+|_+$", "", x)
+      if (!nzchar(x)) x <- "sample"
+      x
+    }
+
+    validate_h5_sample_map <- function(files_df) {
+      n <- nrow(files_df)
+      sample_ids <- vapply(seq_len(n), function(i) {
+        value <- input[[paste0("h5_sample_id_", i)]]
+        if (is.null(value)) "" else trimws(as.character(value))
+      }, character(1))
+      conditions <- vapply(seq_len(n), function(i) {
+        value <- input[[paste0("h5_condition_", i)]]
+        if (is.null(value)) "" else trimws(as.character(value))
+      }, character(1))
+
+      if (any(!nzchar(sample_ids))) {
+        stop("Enter a sample ID for every uploaded H5 file.")
+      }
+      if (any(!grepl("^[A-Za-z0-9][A-Za-z0-9_.-]*$", sample_ids))) {
+        stop("Sample IDs may contain only letters, numbers, periods, hyphens, and underscores, and must start with a letter or number.")
+      }
+      if (anyDuplicated(sample_ids)) {
+        stop("Sample IDs must be unique. Duplicate sample IDs were detected.")
+      }
+      if (any(!nzchar(conditions))) {
+        stop("Enter a condition for every uploaded H5 file.")
+      }
+
+      data.frame(
+        file_name = basename(files_df$name),
+        sample_id = sample_ids,
+        condition = conditions,
+        stringsAsFactors = FALSE
+      )
+    }
+
+    prefix_matrix_barcodes <- function(mat, sample_id) {
+      if (!matrix_is_nonempty(mat)) return(mat)
+      original <- colnames(mat)
+      if (is.null(original) || any(!nzchar(original))) {
+        stop("A matrix contains missing cell barcodes.")
+      }
+      colnames(mat) <- paste(sample_id, original, sep = "_")
+      mat
+    }
+
+    align_feature_matrices <- function(mats, sample_ids, modality = "RNA") {
+      if (length(mats) == 0) stop("No matrices were supplied for ", modality, ".")
+      reference_features <- rownames(mats[[1]])
+      if (is.null(reference_features) || length(reference_features) == 0) {
+        stop(modality, " features are missing from sample ", sample_ids[1], ".")
+      }
+
+      for (i in seq_along(mats)) {
+        current_features <- rownames(mats[[i]])
+        if (identical(current_features, reference_features)) next
+        if (setequal(current_features, reference_features)) {
+          mats[[i]] <- mats[[i]][reference_features, , drop = FALSE]
+        } else {
+          missing_n <- length(setdiff(reference_features, current_features))
+          extra_n <- length(setdiff(current_features, reference_features))
+          stop(
+            modality, " features differ between samples. Sample '", sample_ids[i],
+            "' has ", missing_n, " missing and ", extra_n,
+            " additional features relative to the first sample. Confirm that all files used the same reference genome and feature annotation."
+          )
+        }
+      }
+      mats
+    }
+
+    combine_sparse_matrices <- function(mats) {
+      if (length(mats) == 1) return(mats[[1]])
+      out <- do.call(cbind, mats)
+      if (is.null(out) || nrow(out) == 0 || ncol(out) == 0) {
+        stop("The uploaded matrices could not be combined.")
+      }
+      out
+    }
+
+    combine_optional_h5_modality <- function(results, sample_ids, modality) {
+      mats <- lapply(results, function(x) x[[modality]])
+      present <- vapply(mats, matrix_is_nonempty, logical(1))
+
+      if (!any(present)) {
+        return(list(matrix = NULL, message = NULL))
+      }
+      if (!all(present)) {
+        missing_samples <- sample_ids[!present]
+        return(list(
+          matrix = NULL,
+          message = paste0(
+            toupper(modality), " was not combined because it is missing from: ",
+            paste(missing_samples, collapse = ", "), "."
+          )
+        ))
+      }
+
+      combined <- tryCatch({
+        mats <- align_feature_matrices(mats, sample_ids, modality = toupper(modality))
+        mats <- Map(prefix_matrix_barcodes, mats, sample_ids)
+        combine_sparse_matrices(mats)
+      }, error = function(e) e)
+
+      if (inherits(combined, "error")) {
+        return(list(
+          matrix = NULL,
+          message = paste0(toupper(modality), " was not combined: ", conditionMessage(combined))
+        ))
+      }
+
+      list(matrix = combined, message = NULL)
     }
     
     normalize_uploaded_file_names <- function(files_df) {
@@ -645,6 +787,8 @@ mod_sc_import_server <- function(id) {
           "Cells",
           "Features",
           "Assays",
+          "Samples",
+          "Conditions",
           "Detected species",
           "Input matrix format",
           "Seurat check",
@@ -658,6 +802,8 @@ mod_sc_import_server <- function(id) {
           ncol(seu),
           nrow(seu),
           paste(Seurat::Assays(seu), collapse = ", "),
+          if ("sample_id" %in% colnames(md)) length(unique(as.character(md$sample_id))) else 1,
+          if ("condition" %in% colnames(md)) paste(unique(as.character(md$condition)), collapse = ", ") else "NA",
           if ("species" %in% colnames(md)) as.character(unique(md$species))[1] else "NA",
           if (!is.null(rv$cellranger_version)) rv$cellranger_version else "NA",
           if (!is.null(rv$seurat_version)) rv$seurat_version else "Created in current session",
@@ -671,6 +817,54 @@ mod_sc_import_server <- function(id) {
       )
     })
     
+    # -------------------- H5 sample setup --------------------
+
+    output$h5_sample_setup <- renderUI({
+      req(input$h5file)
+      files <- input$h5file
+      defaults <- make.unique(vapply(files$name, default_h5_sample_id, character(1)), sep = "_")
+
+      tagList(
+        hr(),
+        tags$h5("Assign sample IDs and experimental conditions"),
+        helpText("Sample IDs must be unique. Conditions may be shared by biological replicates, for example Control or Wildtype."),
+        fluidRow(
+          column(4, tags$b("H5 file")),
+          column(4, tags$b("Sample ID")),
+          column(4, tags$b("Condition"))
+        ),
+        lapply(seq_len(nrow(files)), function(i) {
+          fluidRow(
+            column(
+              4,
+              tags$div(
+                style = "padding-top: 8px; overflow-wrap: anywhere;",
+                basename(files$name[i])
+              )
+            ),
+            column(
+              4,
+              textInput(
+                ns(paste0("h5_sample_id_", i)),
+                label = NULL,
+                value = defaults[i],
+                placeholder = "Sample_1"
+              )
+            ),
+            column(
+              4,
+              textInput(
+                ns(paste0("h5_condition_", i)),
+                label = NULL,
+                value = defaults[i],
+                placeholder = "Control"
+              )
+            )
+          )
+        })
+      )
+    })
+
     # -------------------- status --------------------
     
     output$import_status <- renderUI({
@@ -683,6 +877,21 @@ mod_sc_import_server <- function(id) {
         "<b>Assays:</b> ", paste(Seurat::Assays(rv$seu), collapse = ", "), "<br>",
         "<b>Species:</b> ", unique(rv$seu@meta.data$species)[1], "<br>"
       )
+
+      md <- rv$seu@meta.data
+      if ("sample_id" %in% colnames(md)) {
+        status <- paste0(
+          status,
+          "<b>Samples:</b> ", length(unique(as.character(md$sample_id))), " (",
+          paste(unique(as.character(md$sample_id)), collapse = ", "), ")<br>"
+        )
+      }
+      if ("condition" %in% colnames(md)) {
+        status <- paste0(
+          status,
+          "<b>Conditions:</b> ", paste(unique(as.character(md$condition)), collapse = ", "), "<br>"
+        )
+      }
       
       if (!is.null(rv$cellranger_version)) {
         status <- paste0(status, "<b>Input format check:</b> ", rv$cellranger_version, "<br>")
@@ -751,6 +960,7 @@ mod_sc_import_server <- function(id) {
         rv$hto <- FALSE
         rv$adt <- FALSE
         rv$messages <- character(0)
+        rv$h5_sample_map <- NULL
         
         if (detect_species(seu) == "other") {
           add_message("Species could not be confidently detected. Use Species override before normalization.")
@@ -763,80 +973,371 @@ mod_sc_import_server <- function(id) {
     # -------------------- 10x HDF5 import --------------------
     
     observeEvent(input$h5file, {
+      rv$h5_sample_map <- NULL
+      rv$messages <- character(0)
+      if (!is.null(rv$seu) && identical(input$type_import, "h5")) {
+        add_message("H5 file selection changed. Click Import H5 sample(s) to create a new combined object.")
+      }
+    }, ignoreInit = TRUE)
+
+    observeEvent(input$import_h5, {
       req(input$h5file)
-      
-      withProgress(message = "Importing 10x HDF5 file", value = 0, {
-        incProgress(0.2)
-        
-        res <- read_10x_h5_file(input$h5file$datapath, input$h5file$name)
-        if (!isTRUE(res$ok)) {
-          show_import_error("H5 file import failed", res$message)
-          rv$seu <- NULL
-          rv$imported <- FALSE
+      files <- input$h5file
+
+      sample_map <- tryCatch(
+        validate_h5_sample_map(files),
+        error = function(e) e
+      )
+      if (inherits(sample_map, "error")) {
+        show_import_error("H5 sample information is invalid", conditionMessage(sample_map))
+        return(NULL)
+      }
+
+      # Release any previously imported object before loading the new matrices.
+      # Keeping the previous Seurat object during re-import can almost double
+      # peak memory use.
+      rv$seu <- NULL
+      rv$imported <- FALSE
+      rv$h5_sample_map <- NULL
+      rv$messages <- character(0)
+      invisible(gc())
+
+      import_modalities <- isTRUE(input$h5_import_modalities)
+
+      withProgress(message = "Importing 10x HDF5 samples", value = 0, {
+        n_files <- nrow(files)
+        rna_matrices <- vector("list", n_files)
+        result_messages <- character(n_files)
+
+        # Read one sample at a time and retain only the RNA sparse matrix.
+        # ADT/HTO are deliberately discarded during this first pass so the
+        # complete multi-feature H5 results are not held in memory together.
+        for (i in seq_len(n_files)) {
+          incProgress(
+            0.40 / n_files,
+            detail = paste0("Reading RNA for ", sample_map$sample_id[i], " (", i, "/", n_files, ")")
+          )
+
+          res <- read_10x_h5_file(files$datapath[i], files$name[i])
+          if (!isTRUE(res$ok)) {
+            error_message <- if (is.null(res$message)) {
+              "The H5 file could not be read."
+            } else {
+              res$message
+            }
+            rna_matrices <- NULL
+            res <- NULL
+            invisible(gc())
+            show_import_error(
+              paste0("H5 import failed for ", basename(files$name[i])),
+              error_message
+            )
+            return(NULL)
+          }
+
+          rna <- res$rna
+          if (!matrix_is_nonempty(rna)) {
+            rna_matrices <- NULL
+            res <- NULL
+            rna <- NULL
+            invisible(gc())
+            show_import_error(
+              paste0("RNA matrix is unavailable for ", basename(files$name[i])),
+              "The H5 file does not contain a non-empty Gene Expression matrix."
+            )
+            return(NULL)
+          }
+
+          rna_matrices[[i]] <- prefix_matrix_barcodes(rna, sample_map$sample_id[i])
+          result_messages[i] <- if (is.null(res$message)) "" else as.character(res$message)[1]
+
+          rna <- NULL
+          res <- NULL
+          invisible(gc())
+        }
+
+        incProgress(0.08, detail = "Validating RNA features")
+        rna_matrices <- tryCatch(
+          align_feature_matrices(
+            rna_matrices,
+            sample_map$sample_id,
+            modality = "RNA"
+          ),
+          error = function(e) e
+        )
+
+        if (inherits(rna_matrices, "error")) {
+          msg <- conditionMessage(rna_matrices)
+          rna_matrices <- NULL
+          invisible(gc())
+          show_import_error("H5 feature validation failed", msg)
           return(NULL)
         }
-        
-        incProgress(0.45, detail = "Creating Seurat object")
-        
-        seu <- Seurat::CreateSeuratObject(
-          counts = res$rna,
-          assay = "RNA",
-          project = "CoTRA_scRNA_H5"
+
+        cell_counts <- vapply(rna_matrices, ncol, integer(1))
+
+        incProgress(0.10, detail = "Combining sparse RNA matrices")
+        combined_rna <- tryCatch(
+          combine_sparse_matrices(rna_matrices),
+          error = function(e) e
         )
-        
-        incProgress(0.65, detail = "Adding optional modalities")
-        
+
+        if (inherits(combined_rna, "error")) {
+          msg <- conditionMessage(combined_rna)
+          combined_rna <- NULL
+          rna_matrices <- NULL
+          invisible(gc())
+          show_import_error("H5 matrix combination failed", msg)
+          return(NULL)
+        }
+
+        if (anyDuplicated(colnames(combined_rna))) {
+          combined_rna <- NULL
+          rna_matrices <- NULL
+          invisible(gc())
+          show_import_error(
+            "Duplicate cell names",
+            "Cell names are still duplicated after adding sample prefixes. Check the sample IDs and source matrices."
+          )
+          return(NULL)
+        }
+
+        # The combined sparse matrix now owns all required RNA data. Release
+        # the per-sample matrices before creating the Seurat object.
+        rna_matrices <- NULL
+        invisible(gc())
+
+        # Store repeated metadata as factors. This is substantially smaller
+        # than repeating long character strings once for every cell.
+        combined_meta <- data.frame(
+          sample_id = factor(
+            rep(sample_map$sample_id, times = cell_counts),
+            levels = unique(sample_map$sample_id)
+          ),
+          condition = factor(
+            rep(sample_map$condition, times = cell_counts),
+            levels = unique(sample_map$condition)
+          ),
+          source_file = factor(
+            rep(sample_map$file_name, times = cell_counts),
+            levels = unique(sample_map$file_name)
+          ),
+          orig.ident = factor(
+            rep(sample_map$sample_id, times = cell_counts),
+            levels = unique(sample_map$sample_id)
+          ),
+          row.names = colnames(combined_rna),
+          check.names = FALSE
+        )
+
+        incProgress(0.14, detail = "Creating combined Seurat object")
+        seu <- tryCatch(
+          Seurat::CreateSeuratObject(
+            counts = combined_rna,
+            assay = "RNA",
+            project = "CoTRA_scRNA_H5",
+            meta.data = combined_meta
+          ),
+          error = function(e) e
+        )
+
+        combined_rna <- NULL
+        combined_meta <- NULL
+        invisible(gc())
+
+        if (inherits(seu, "error")) {
+          msg <- conditionMessage(seu)
+          seu <- NULL
+          invisible(gc())
+          show_import_error("Seurat object creation failed", msg)
+          return(NULL)
+        }
+
+        required_metadata <- c("sample_id", "condition", "source_file", "orig.ident")
+        missing_metadata <- setdiff(required_metadata, colnames(seu@meta.data))
+        if (length(missing_metadata) > 0) {
+          seu <- NULL
+          invisible(gc())
+          show_import_error(
+            "Metadata creation failed",
+            paste("The following required metadata columns are missing:", paste(missing_metadata, collapse = ", "))
+          )
+          return(NULL)
+        }
+
+        extra_messages <- character(0)
         adt_added <- FALSE
         hto_added <- FALSE
-        extra_messages <- character(0)
-        
-        if (matrix_is_nonempty(res$adt)) {
-          adt_res <- add_assay_from_matrix(seu, res$adt, "ADT", normalize_clr = TRUE)
-          seu <- adt_res$seu
-          adt_added <- isTRUE(adt_res$added)
-          extra_messages <- c(extra_messages, adt_res$message)
+
+        # Optional modalities are loaded only when explicitly requested. They
+        # are read in a second pass after the large RNA intermediates have been
+        # released, which keeps the peak memory substantially lower.
+        if (import_modalities) {
+          incProgress(0.08, detail = "Loading optional ADT/HTO assays")
+
+          load_optional_modality <- function(modality) {
+            mats <- vector("list", n_files)
+            present <- logical(n_files)
+
+            for (j in seq_len(n_files)) {
+              res2 <- read_10x_h5_file(files$datapath[j], files$name[j])
+              if (!isTRUE(res2$ok)) {
+                mats <- NULL
+                res2 <- NULL
+                invisible(gc())
+                return(list(
+                  matrix = NULL,
+                  message = paste0(toupper(modality), " was not imported because sample ", sample_map$sample_id[j], " could not be reread.")
+                ))
+              }
+
+              mat2 <- res2[[modality]]
+              present[j] <- matrix_is_nonempty(mat2)
+              if (present[j]) {
+                mats[[j]] <- prefix_matrix_barcodes(mat2, sample_map$sample_id[j])
+              }
+
+              mat2 <- NULL
+              res2 <- NULL
+              invisible(gc())
+            }
+
+            if (!any(present)) {
+              mats <- NULL
+              invisible(gc())
+              return(list(matrix = NULL, message = NULL))
+            }
+
+            if (!all(present)) {
+              missing_samples <- sample_map$sample_id[!present]
+              mats <- NULL
+              invisible(gc())
+              return(list(
+                matrix = NULL,
+                message = paste0(
+                  toupper(modality), " was not combined because it is missing from: ",
+                  paste(missing_samples, collapse = ", "), "."
+                )
+              ))
+            }
+
+            mats <- tryCatch(
+              align_feature_matrices(mats, sample_map$sample_id, modality = toupper(modality)),
+              error = function(e) e
+            )
+            if (inherits(mats, "error")) {
+              msg <- conditionMessage(mats)
+              mats <- NULL
+              invisible(gc())
+              return(list(matrix = NULL, message = paste0(toupper(modality), " was not combined: ", msg)))
+            }
+
+            combined <- tryCatch(combine_sparse_matrices(mats), error = function(e) e)
+            mats <- NULL
+            invisible(gc())
+
+            if (inherits(combined, "error")) {
+              msg <- conditionMessage(combined)
+              combined <- NULL
+              invisible(gc())
+              return(list(matrix = NULL, message = paste0(toupper(modality), " was not combined: ", msg)))
+            }
+
+            list(matrix = combined, message = NULL)
+          }
+
+          adt_combined <- load_optional_modality("adt")
+          if (!is.null(adt_combined$message)) {
+            extra_messages <- c(extra_messages, adt_combined$message)
+          }
+          if (matrix_is_nonempty(adt_combined$matrix)) {
+            adt_res <- add_assay_from_matrix(seu, adt_combined$matrix, "ADT", normalize_clr = TRUE)
+            seu <- adt_res$seu
+            adt_added <- isTRUE(adt_res$added)
+            extra_messages <- c(extra_messages, adt_res$message)
+          }
+          adt_combined <- NULL
+          invisible(gc())
+
+          hto_combined <- load_optional_modality("hto")
+          if (!is.null(hto_combined$message)) {
+            extra_messages <- c(extra_messages, hto_combined$message)
+          }
+          if (matrix_is_nonempty(hto_combined$matrix)) {
+            hto_res <- add_assay_from_matrix(seu, hto_combined$matrix, "HTO", normalize_clr = FALSE)
+            seu <- hto_res$seu
+            hto_added <- isTRUE(hto_res$added)
+            extra_messages <- c(extra_messages, hto_res$message)
+          }
+          hto_combined <- NULL
+          invisible(gc())
+        } else {
+          incProgress(0.08, detail = "Skipping optional ADT/HTO assays")
+          extra_messages <- c(
+            extra_messages,
+            "Optional ADT/HTO import was skipped to reduce peak memory use."
+          )
         }
-        
-        if (matrix_is_nonempty(res$hto)) {
-          hto_res <- add_assay_from_matrix(seu, res$hto, "HTO", normalize_clr = FALSE)
-          seu <- hto_res$seu
-          hto_added <- isTRUE(hto_res$added)
-          extra_messages <- c(extra_messages, hto_res$message)
-        }
-        
-        incProgress(0.8, detail = "Calculating QC metrics")
-        
+
+        incProgress(0.10, detail = "Calculating QC metrics")
         seu <- set_species_and_qc(seu, species_override = "auto")
-        
+        seu@misc$CoTRA_import <- list(
+          input_type = "10x HDF5",
+          combined_samples = n_files,
+          sample_map = sample_map,
+          barcode_prefix_applied = TRUE,
+          optional_modalities_requested = import_modalities,
+          imported_at = Sys.time()
+        )
+
         rv$seu <- seu
-        rv$input_check <- res$message
-        rv$cellranger_version <- res$version
-        rv$seurat_version <- "Created from 10x HDF5 matrix"
+        rv$h5_sample_map <- sample_map
+        rv$input_check <- paste0(
+          "Imported ", n_files, " H5 sample(s): ",
+          paste(sample_map$sample_id, collapse = ", "), "."
+        )
+        rv$cellranger_version <- paste0("10x Genomics CellRanger HDF5; ", n_files, " sample(s)")
+        rv$seurat_version <- "Created from combined 10x HDF5 matrices"
         rv$seurat_suitable <- TRUE
         rv$imported <- TRUE
         rv$normalized <- FALSE
         rv$hto <- hto_added
         rv$adt <- adt_added
         rv$messages <- character(0)
-        
-        add_message(res$message)
-        
-        if (length(extra_messages) > 0) {
-          for (msg in extra_messages) add_message(msg)
+
+        add_message(rv$input_check)
+        add_message(paste0(
+          "Conditions: ",
+          paste(unique(sample_map$condition), collapse = ", "), "."
+        ))
+        add_message("Cell barcodes were prefixed with sample IDs and all RNA matrices were combined before Seurat object creation.")
+
+        for (msg in result_messages) {
+          if (!is.na(msg) && nzchar(msg)) add_message(msg)
         }
-        
-        if (grepl("raw_feature_bc_matrix", res$filename, ignore.case = TRUE)) {
-          add_message("Warning: this looks like a raw 10x matrix. It may contain many empty droplets. filtered_feature_bc_matrix.h5 is recommended for routine CoTRA analysis.")
+        for (msg in extra_messages) {
+          if (!is.null(msg) && !is.na(msg) && nzchar(msg)) add_message(msg)
         }
-        
+
+        raw_files <- grepl("raw_feature_bc_matrix", sample_map$file_name, ignore.case = TRUE)
+        if (any(raw_files)) {
+          add_message(paste0(
+            "Warning: raw 10x matrices were detected for: ",
+            paste(sample_map$sample_id[raw_files], collapse = ", "),
+            ". Raw matrices may contain many empty droplets and can exceed available RAM."
+          ))
+        }
+
         if (detect_species(seu) == "other") {
           add_message("Species could not be confidently detected. Use Species override before normalization.")
         }
-        
-        incProgress(1)
+
+        seu <- NULL
+        invisible(gc())
+        incProgress(0.10, detail = "Import complete")
       })
     })
-    
+
     # -------------------- HTO / ADT import --------------------
     
     add_modality_assay <- function(files_df, assay_name, normalize_clr = FALSE) {
@@ -919,6 +1420,7 @@ mod_sc_import_server <- function(id) {
         rv$hto <- "HTO" %in% Seurat::Assays(obj)
         rv$adt <- "ADT" %in% Seurat::Assays(obj)
         rv$messages <- character(0)
+        rv$h5_sample_map <- NULL
         
         add_message(check$message)
         if (!isTRUE(check$suitable)) {
@@ -985,6 +1487,7 @@ mod_sc_import_server <- function(id) {
         rv$hto <- "HTO" %in% Seurat::Assays(seu)
         rv$adt <- "ADT" %in% Seurat::Assays(seu)
         rv$messages <- character(0)
+        rv$h5_sample_map <- NULL
         
         add_message(check$message)
         if (!isTRUE(check$suitable)) {
@@ -1270,6 +1773,7 @@ mod_sc_import_server <- function(id) {
               cellranger_version = rv$cellranger_version,
               seurat_version = rv$seurat_version,
               seurat_suitable = rv$seurat_suitable,
+              h5_sample_map = rv$h5_sample_map,
               saved_at = Sys.time()
             ),
             file
@@ -1288,7 +1792,8 @@ mod_sc_import_server <- function(id) {
         imported = reactive(rv$imported),
         normalized = reactive(rv$normalized),
         input_check = reactive(rv$input_check),
-        seurat_suitable = reactive(rv$seurat_suitable)
+        seurat_suitable = reactive(rv$seurat_suitable),
+        h5_sample_map = reactive(rv$h5_sample_map)
       )
     )
   })

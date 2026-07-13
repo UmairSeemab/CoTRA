@@ -28,6 +28,7 @@ source("modules/sc/tsne_umap.R")
 source("modules/sc/clustering.R")
 source("modules/sc/markers.R")
 source("modules/sc/annotation.R")
+source("modules/sc/de_expression.R")
 #source("modules/sc/differential_abundance.R")
 source("modules/sc/trajectory.R")
 source("modules/sc/pathway_activity.R")
@@ -36,7 +37,7 @@ source("modules/sc/report.R")
 #source("modules/sc/velocity.R")
 
 
-options(shiny.maxRequestSize = 300 * 1024^2)
+options(shiny.maxRequestSize = 1000 * 1024^2)
 
 server <- function(input, output, session) {
   
@@ -149,46 +150,54 @@ server <- function(input, output, session) {
     sc_markers$seurat()
   })
   
-  # 9. Differential Abundance
+  # 9. Differential Expression
+  sc_de <- mod_sc_de_server(
+    "sc_de",
+    seurat_r = sc_da_input,
+    sc_state = cotra_state
+  )
+
+  # 10. Differential Abundance
   #sc_da <- mod_sc_differential_abundance_server(
     #"sc_da",
    # seurat_r = sc_da_input,
    # sc_state = cotra_state
   #)
   
-  # 10. Trajectory
+  # 11. Trajectory
   sc_trajectory <- mod_sc_trajectory_server(
     "sc_trajectory",
     seurat_r = sc_da_input,
     sc_state = cotra_state
   )
   
-  # 11. Pathway Activity
+  # 12. Pathway Activity
   sc_pathway <- mod_sc_pathway_server(
     "sc_pathway",
     seurat_r = sc_da_input,
     sc_state = cotra_state
   )
   
-  # 12. Cell-Cell Communication
+  # 13. Cell-Cell Communication
   sc_comm <- mod_sc_comm_server(
     "sc_comm",
     seurat_r = sc_da_input,
     sc_state = cotra_state
   )
-  # 13. scRNA Report
+  # 14. scRNA Report
   sc_report <- mod_sc_report_server(
     "sc_report",
     seurat_r = sc_da_input,
     sc_state = cotra_state,
     sc_markers = sc_markers,
     sc_annot = sc_annot,
+    sc_de = sc_de,
     sc_trajectory = sc_trajectory,
     sc_pathway = sc_pathway,
     sc_comm = sc_comm
   )
   
-  # 13. RNA Velocity
+  # 15. RNA Velocity
   #sc_velocity <- mod_sc_velocity_server(
    # "sc_velocity",
    # seurat_r = sc_markers$seurat,
