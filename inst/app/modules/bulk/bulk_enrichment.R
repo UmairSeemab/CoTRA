@@ -5,7 +5,7 @@
 # - KEGG Pathview pathway visualization
 # - Network plots using cnetplot and emapplot
 # - CSV/XLSX table downloads
-# - PDF and SVG plot downloads
+# - PDF/SVG vector downloads and 300 dpi PNG network-plot downloads
 # - Expandable interpretation panels
 
 mod_bulk_enrich_ui <- function(id) {
@@ -158,8 +158,9 @@ mod_bulk_enrich_ui <- function(id) {
             ),
             br(),
             fluidRow(
-              column(6, downloadButton(ns("dl_nr_pdf"), "PDF")),
-              column(6, downloadButton(ns("dl_nr_svg"), "SVG"))
+              column(4, downloadButton(ns("dl_nr_pdf"), "PDF")),
+              column(4, downloadButton(ns("dl_nr_svg"), "SVG")),
+              column(4, downloadButton(ns("dl_nr_png"), "PNG (300 dpi)"))
             ),
             br(),
             plotOutput(ns("nr_plot"), height = "600px"),
@@ -550,6 +551,49 @@ mod_bulk_enrich_server <- function(id, deg_data, wgcna_output = NULL, dds.fc = N
       out
     })
     
+
+    gene_regulation_lookup <- reactive({
+      df <- deg_mapped()
+      validate(need("padj" %in% colnames(df), "No padj column found"))
+      lc <- lfc_col()
+
+      df$lfc_for_network <- suppressWarnings(as.numeric(df[[lc]]))
+      keep <- !is.na(df$padj) &
+        df$padj <= input$padj_cutoff &
+        !is.na(df$lfc_for_network) &
+        abs(df$lfc_for_network) >= input$logfc_cutoff
+      df <- df[keep, , drop = FALSE]
+
+      validate(need(nrow(df) > 0, "No significant genes are available for Cnetplot regulation colours."))
+
+      df$Regulation <- ifelse(
+        df$lfc_for_network >= input$logfc_cutoff,
+        "Upregulated",
+        ifelse(df$lfc_for_network <= -input$logfc_cutoff, "Downregulated", NA_character_)
+      )
+      df <- df[!is.na(df$Regulation), , drop = FALSE]
+
+      alias_columns <- intersect(
+        c(input$gene_col, "input_id", "SYMBOL", "ENTREZID", "ENSEMBL"),
+        colnames(df)
+      )
+
+      alias_list <- lapply(alias_columns, function(col_nm) {
+        data.frame(
+          alias = clean_ids(df[[col_nm]]),
+          Regulation = df$Regulation,
+          log2FC = df$lfc_for_network,
+          stringsAsFactors = FALSE
+        )
+      })
+
+      lookup <- do.call(rbind, alias_list)
+      lookup <- lookup[!is.na(lookup$alias) & nzchar(lookup$alias), , drop = FALSE]
+      lookup <- lookup[order(abs(lookup$log2FC), decreasing = TRUE), , drop = FALSE]
+      lookup <- lookup[!duplicated(lookup$alias), , drop = FALSE]
+      lookup
+    })
+
     normalise_msigdb_collection <- function(collection_value) {
       switch(
         as.character(collection_value),
@@ -825,12 +869,147 @@ mod_bulk_enrich_server <- function(id, deg_data, wgcna_output = NULL, dds.fc = N
       validate(need(!is.null(obj) && nrow(as.data.frame(obj)) > 0, "No ORA enrichment object available"))
       
       if (input$nr_type == "cnet") {
-        p <- enrichplot::cnetplot(obj, showCategory = input$nr_show) +
-          ggplot2::labs(size = "No. of Genes")
+        # Build without default labels so pathway and gene labels can be styled independently.
+        # categorySizeBy = ~itemNum means pathway-node size represents the number of DE genes.
+        p <- enrichplot::cnetplot(
+          obj,
+          showCategory = input$nr_show,
+          categorySizeBy = ~itemNum,
+          node_label = "none"
+        )
+        
+        node_data <- p$data
+        validate(need(
+          all(c("x", "y", "label", "size", ".isCategory") %in% names(node_data)),
+          "Cnetplot node data are not available in the expected format."
+        ))
+        
+        category_nodes <- node_data[node_data$.isCategory %in% TRUE, , drop = FALSE]
+        gene_nodes <- node_data[!node_data$.isCategory %in% TRUE, , drop = FALSE]
+        category_nodes$gene_count <- suppressWarnings(as.numeric(category_nodes$size))
+        
+        # Match Cnetplot gene labels to the DE table using symbol, Entrez, Ensembl,
+        # and the original uploaded gene identifier. This also works for KEGG plots,
+        # where Cnetplot may use Entrez IDs as gene labels.
+        regulation_lookup <- gene_regulation_lookup()
+        gene_nodes$gene_alias <- clean_ids(gene_nodes$label)
+        idx <- match(gene_nodes$gene_alias, regulation_lookup$alias)
+        gene_nodes$Regulation <- regulation_lookup$Regulation[idx]
+        gene_nodes$log2FC <- regulation_lookup$log2FC[idx]
+        
+        up_gene_nodes <- gene_nodes[gene_nodes$Regulation %in% "Upregulated", , drop = FALSE]
+        down_gene_nodes <- gene_nodes[gene_nodes$Regulation %in% "Downregulated", , drop = FALSE]
+        other_gene_nodes <- gene_nodes[is.na(gene_nodes$Regulation), , drop = FALSE]
+        
+        # ggrepel/ggplot2 specify text size in mm. These conversions correspond to
+        # 12-point pathway labels and 10-point gene labels.
+        pathway_label_size <- 12 / 2.845276
+        gene_label_size <- 10 / 2.845276
+        
+        p <- p +
+          # Pathway nodes: size and fill both represent the number of DE genes.
+          ggplot2::geom_point(
+            data = category_nodes,
+            mapping = ggplot2::aes(x = x, y = y, size = size, fill = gene_count),
+            inherit.aes = FALSE,
+            shape = 21,
+            colour = "black",
+            stroke = 0.5
+          ) +
+          ggplot2::scale_fill_viridis_c(
+            name = "No. of Genes",
+            option = "C",
+            direction = 1
+          ) +
+          # Gene nodes: regulation direction is shown with red/blue fill.
+          # Alpha is mapped only to generate an independent regulation legend without
+          # replacing the pathway fill scale used above.
+          ggplot2::geom_point(
+            data = up_gene_nodes,
+            mapping = ggplot2::aes(x = x, y = y, alpha = Regulation),
+            inherit.aes = FALSE,
+            shape = 21,
+            size = 3.2,
+            fill = "#D73027",
+            colour = "black",
+            stroke = 0.45
+          ) +
+          ggplot2::geom_point(
+            data = down_gene_nodes,
+            mapping = ggplot2::aes(x = x, y = y, alpha = Regulation),
+            inherit.aes = FALSE,
+            shape = 21,
+            size = 3.2,
+            fill = "#4575B4",
+            colour = "black",
+            stroke = 0.45
+          ) +
+          ggplot2::geom_point(
+            data = other_gene_nodes,
+            mapping = ggplot2::aes(x = x, y = y),
+            inherit.aes = FALSE,
+            shape = 21,
+            size = 3.2,
+            fill = "grey75",
+            colour = "black",
+            stroke = 0.45
+          ) +
+          ggplot2::scale_alpha_manual(
+            name = "Gene regulation",
+            values = c("Upregulated" = 1, "Downregulated" = 1),
+            limits = c("Upregulated", "Downregulated"),
+            breaks = c("Upregulated", "Downregulated"),
+            drop = FALSE,
+            guide = ggplot2::guide_legend(
+              override.aes = list(
+                shape = 21,
+                size = 4,
+                fill = c("#D73027", "#4575B4"),
+                colour = "black",
+                alpha = 1
+              )
+            )
+          ) +
+          ggrepel::geom_text_repel(
+            data = category_nodes,
+            mapping = ggplot2::aes(x = x, y = y, label = label),
+            inherit.aes = FALSE,
+            family = "Arial",
+            colour = "black",
+            size = pathway_label_size,
+            max.overlaps = Inf,
+            box.padding = 0.35,
+            point.padding = 0.20,
+            min.segment.length = 0
+          ) +
+          ggrepel::geom_text_repel(
+            data = gene_nodes,
+            mapping = ggplot2::aes(x = x, y = y, label = label),
+            inherit.aes = FALSE,
+            family = "Arial",
+            colour = "black",
+            size = gene_label_size,
+            max.overlaps = Inf,
+            box.padding = 0.20,
+            point.padding = 0.10,
+            min.segment.length = 0
+          ) +
+          ggplot2::labs(size = "No. of Genes", fill = "No. of Genes") +
+          ggplot2::guides(size = "none") +
+          ggplot2::theme(
+            text = ggplot2::element_text(family = "Arial", colour = "black"),
+            legend.text = ggplot2::element_text(family = "Arial", colour = "black", size = 10),
+            legend.title = ggplot2::element_text(family = "Arial", colour = "black", size = 11)
+          )
       } else {
         obj_sim <- enrichplot::pairwise_termsim(obj)
         p <- enrichplot::emapplot(obj_sim, showCategory = input$nr_show) +
-          ggplot2::labs(size = "No. of Genes")
+          ggplot2::labs(size = "No. of Genes") +
+          ggplot2::theme(
+            text = ggplot2::element_text(family = "Arial", colour = "black"),
+            legend.text = ggplot2::element_text(family = "Arial", colour = "black"),
+            legend.title = ggplot2::element_text(family = "Arial", colour = "black")
+          )
       }
       
       p
@@ -858,6 +1037,21 @@ mod_bulk_enrich_server <- function(id, deg_data, wgcna_output = NULL, dds.fc = N
         svglite::svglite(file, width = 9, height = 7)
         print(nr_plot_obj())
         grDevices::dev.off()
+      }
+    )
+    
+    output$dl_nr_png <- downloadHandler(
+      filename = function() cotra_file_name(paste0("BulkEnrichment_NetworkPlot_", input$nr_type), "png"),
+      content = function(file) {
+        ggplot2::ggsave(
+          filename = file,
+          plot = nr_plot_obj(),
+          width = 9,
+          height = 7,
+          units = "in",
+          dpi = 300,
+          bg = "white"
+        )
       }
     )
     

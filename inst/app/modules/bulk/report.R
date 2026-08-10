@@ -49,8 +49,8 @@ mod_bulk_report_ui <- function(id) {
         
         fluidRow(
           column(4, textInput(ns("project_title"), "Report title", value = "CoTRA Bulk RNA-seq Analysis Report")),
-          column(4, textInput(ns("author"), "Author", value = "CoTRA user")),
-          column(4, textInput(ns("project_name"), "Project name", value = "Bulk RNA-seq project"))
+          column(4, uiOutput(ns("project_name_display"))),
+          column(4, uiOutput(ns("author_name_display")))
         ),
         
         fluidRow(
@@ -100,7 +100,9 @@ mod_bulk_report_server <- function(id,
                                    de_results,
                                    annot_reactive = reactive(NULL),
                                    enrich_state = NULL,
-                                   groups_reactive = NULL) {
+                                   groups_reactive = NULL,
+                                   project_name_reactive = NULL,
+                                   author_name_reactive = NULL) {
   moduleServer(id, function(input, output, session) {
     
     rv <- reactiveValues(
@@ -121,6 +123,62 @@ mod_bulk_report_server <- function(id,
     
     output$status <- renderText({
       rv$status
+    })
+    
+    get_project_name <- function() {
+      x <- tryCatch({
+        if (is.function(project_name_reactive)) {
+          project_name_reactive()
+        } else {
+          project_name_reactive
+        }
+      }, error = function(e) NULL)
+      
+      if (is.null(x) || length(x) == 0) {
+        return("Untitled bulk RNA-seq project")
+      }
+      
+      x <- trimws(as.character(x[1]))
+      if (nzchar(x)) x else "Untitled bulk RNA-seq project"
+    }
+    
+    output$project_name_display <- renderUI({
+      div(
+        tags$label("Project name"),
+        div(
+          style = "padding:7px 10px; border:1px solid #d2d6de; border-radius:4px; background:#f7f7f7; min-height:34px;",
+          strong(get_project_name())
+        ),
+        helpText("Set in the Bulk Upload module and carried into this report automatically.")
+      )
+    })
+    
+    get_author_name <- function() {
+      x <- tryCatch({
+        if (is.function(author_name_reactive)) {
+          author_name_reactive()
+        } else {
+          author_name_reactive
+        }
+      }, error = function(e) NULL)
+      
+      if (is.null(x) || length(x) == 0) {
+        return("CoTRA user")
+      }
+      
+      x <- trimws(as.character(x[1]))
+      if (nzchar(x)) x else "CoTRA user"
+    }
+    
+    output$author_name_display <- renderUI({
+      div(
+        tags$label("Author"),
+        div(
+          style = "padding:7px 10px; border:1px solid #d2d6de; border-radius:4px; background:#f7f7f7; min-height:34px;",
+          strong(get_author_name())
+        ),
+        helpText("Set in the Bulk Upload module and carried into this report automatically.")
+      )
     })
     
     safe_name <- function(x) {
@@ -586,8 +644,8 @@ mod_bulk_report_server <- function(id,
         ".note{background:#f7f7f7; padding:10px; border-left:4px solid #1f4e79;}",
         "</style></head><body>",
         "<h1>", html_clean(input$project_title), "</h1>",
-        "<p><b>Project:</b> ", html_clean(input$project_name), "<br>",
-        "<b>Author:</b> ", html_clean(input$author), "<br>",
+        "<p><b>Project:</b> ", html_clean(get_project_name()), "<br>",
+        "<b>Author:</b> ", html_clean(get_author_name()), "<br>",
         "<b>Generated:</b> ", format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "</p>",
         "<div class='note'>Padj cutoff: ", input$padj_cutoff, ", Abs log2FC cutoff: ", input$logfc_cutoff, "</div>"
       )

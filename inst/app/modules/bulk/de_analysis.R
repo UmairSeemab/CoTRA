@@ -1019,18 +1019,89 @@ mod_bulk_de_server <- function(id, bulk_data, groups) {
         sub <- sub[, col_ord, drop = FALSE]
       }
       
-      plotly::plot_ly(
+      # Add a separate row annotation for DE direction without changing
+      # the expression heatmap itself. Up/Down is defined by log2 fold change.
+      sig_heat <- sig[match(rownames(sub), sig$gene), , drop = FALSE]
+      regulation <- ifelse(sig_heat$lfc > 0, 1, -1)
+      regulation_label <- ifelse(
+        regulation > 0,
+        "Upregulated",
+        "Downregulated"
+      )
+
+      annotation_z <- matrix(regulation, ncol = 1)
+      rownames(annotation_z) <- rownames(sub)
+      colnames(annotation_z) <- "DE direction"
+
+      annotation_text <- matrix(
+        paste0(
+          "Gene: ", rownames(sub),
+          "<br>Direction: ", regulation_label
+        ),
+        ncol = 1
+      )
+
+      direction_plot <- plotly::plot_ly(
+        x = "DE direction",
+        y = rownames(sub),
+        z = annotation_z,
+        type = "heatmap",
+        zmin = -1,
+        zmax = 1,
+        colorscale = list(
+          list(0.000, "#2166AC"),
+          list(0.499, "#2166AC"),
+          list(0.500, "#B2182B"),
+          list(1.000, "#B2182B")
+        ),
+        text = annotation_text,
+        hoverinfo = "text",
+        colorbar = list(
+          title = "DE direction",
+          tickmode = "array",
+          tickvals = c(-1, 1),
+          ticktext = c("Downregulated", "Upregulated"),
+          x = 1.13,
+          len = 0.28,
+          y = 0.82,
+          thickness = 12
+        )
+      ) %>%
+        plotly::layout(
+          xaxis = list(title = NULL),
+          yaxis = list(title = "Genes", autorange = "reversed")
+        )
+
+      expression_plot <- plotly::plot_ly(
         x = colnames(sub),
         y = rownames(sub),
         z = sub,
         type = "heatmap",
         colorscale = "RdBu",
-        reversescale = TRUE
+        reversescale = TRUE,
+        colorbar = list(
+          title = "Scaled expression",
+          x = 1.02,
+          len = 0.58,
+          y = 0.36
+        )
+      ) %>%
+        plotly::layout(
+          xaxis = list(title = "Samples"),
+          yaxis = list(title = NULL, autorange = "reversed")
+        )
+
+      plotly::subplot(
+        direction_plot,
+        expression_plot,
+        widths = c(0.08, 0.92),
+        shareY = TRUE,
+        margin = 0.01
       ) %>%
         plotly::layout(
           title = paste0("Heatmap of significant genes (", nrow(sub), " genes)"),
-          xaxis = list(title = "Samples"),
-          yaxis = list(title = "Genes", autorange = "reversed")
+          yaxis = list(title = "Genes", autorange = "reversed"),
+          margin = list(r = 190)
         )
     })
     

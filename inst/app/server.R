@@ -78,7 +78,16 @@ server <- function(input, output, session) {
   de_results  <- mod_bulk_de_server("bulk_de", bulk_data, bulk_groups)
   bulk_annot  <- mod_bulk_annotation_server("bulk_annot", de_results)
   bulk_enrich <- mod_bulk_enrich_server("bulk_enrich", deg_data = de_results, wgcna_output = reactive({ bulk_wgcna }))
-  bulk_report <- mod_bulk_report_server("bulk_report", bulk_reactive = bulk_data, groups_reactive = bulk_groups, de_results = de_results, annot_reactive = bulk_annot, enrich_state = bulk_enrich)
+  bulk_report <- mod_bulk_report_server(
+    "bulk_report",
+    bulk_reactive = bulk_data,
+    groups_reactive = bulk_groups,
+    de_results = de_results,
+    annot_reactive = bulk_annot,
+    enrich_state = bulk_enrich,
+    project_name_reactive = bulk_data$project_name,
+    author_name_reactive = bulk_data$author_name
+  )
 
     
   # ==========================================================
