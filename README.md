@@ -42,7 +42,102 @@ This package keeps reusable R functions under `R/` and the Shiny app under `inst
 devtools::check()
 BiocCheck::BiocCheck()
 ```
+## Cloud computer installation (CSC)
 
+```r
+# ============================================================
+# CoTRA installation on CSC Roihu
+# r-env/452: R 4.5.2 + Bioconductor 3.22
+# ============================================================
+
+libpath <- "/projappl/project_2007629/CoTRA_Rlibs_452"
+
+dir.create(
+  libpath,
+  recursive = TRUE,
+  showWarnings = FALSE
+)
+
+.libPaths(
+  c(
+    libpath,
+    .libPaths()
+  )
+)
+
+options(
+  repos = c(
+    CRAN = "https://cloud.r-project.org"
+  ),
+  timeout = 2000
+)
+
+cat("R version:\n")
+print(R.version.string)
+
+# ------------------------------------------------------------
+# BiocManager
+# ------------------------------------------------------------
+
+if (!requireNamespace("BiocManager", quietly = TRUE)) {
+  install.packages(
+    "BiocManager",
+    lib = libpath
+  )
+}
+
+BiocManager::install(
+  version = "3.22",
+  ask = FALSE,
+  update = FALSE
+)
+
+cat("\nBioconductor version:\n")
+print(BiocManager::version())
+
+# ------------------------------------------------------------
+# remotes
+# ------------------------------------------------------------
+
+if (!requireNamespace("remotes", quietly = TRUE)) {
+  install.packages(
+    "remotes",
+    lib = libpath
+  )
+}
+
+# ------------------------------------------------------------
+# Install CoTRA
+# ------------------------------------------------------------
+
+remotes::install_github(
+  "UmairSeemab/CoTRA",
+  dependencies = c(
+    "Depends",
+    "Imports",
+    "LinkingTo"
+  ),
+  upgrade = "never",
+  force = TRUE,
+  lib = libpath
+)
+
+# ------------------------------------------------------------
+# Test installation
+# ------------------------------------------------------------
+
+library(
+  CoTRA,
+  lib.loc = libpath
+)
+
+cat("\nCoTRA installed successfully\n")
+cat("Version: ")
+print(packageVersion("CoTRA"))
+
+cat("\nInstallation path:\n")
+print(find.package("CoTRA"))
+```
 
 ## Output folder
 
