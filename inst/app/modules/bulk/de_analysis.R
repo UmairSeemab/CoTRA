@@ -445,6 +445,84 @@ mod_bulk_de_server <- function(id, bulk_data, groups) {
       df[idx, , drop = FALSE]
     }
     
+    format_extreme_de_pvalues <- function(df, digits = 3) {
+      if (is.null(df) || !is.data.frame(df) || nrow(df) == 0) {
+        return(df)
+      }
+      
+      out <- df
+      
+      if ("pvalue" %in% names(out)) {
+        p <- suppressWarnings(as.numeric(out$pvalue))
+        p_display <- rep(NA_character_, length(p))
+        p_display[is.na(p)] <- "NA"
+        
+        idx_nonzero <- !is.na(p) & p > 0
+        p_display[idx_nonzero] <- formatC(
+          p[idx_nonzero],
+          format = "e",
+          digits = digits
+        )
+        
+        idx_zero <- !is.na(p) & p == 0
+        
+        if (any(idx_zero)) {
+          if ("stat" %in% names(out)) {
+            z <- abs(suppressWarnings(as.numeric(out$stat[idx_zero])))
+            
+            log_p <- log(2) + pnorm(
+              z,
+              lower.tail = FALSE,
+              log.p = TRUE
+            )
+            
+            log10_p <- log_p / log(10)
+            exponent <- floor(log10_p)
+            mantissa <- exp(log_p - exponent * log(10))
+            
+            formatted <- rep("<1e-300", sum(idx_zero))
+            ok <- is.finite(log_p) & is.finite(mantissa) & is.finite(exponent)
+            
+            formatted[ok] <- paste0(
+              formatC(
+                mantissa[ok],
+                format = "f",
+                digits = max(1, digits - 1)
+              ),
+              "e",
+              exponent[ok]
+            )
+            
+            p_display[idx_zero] <- formatted
+          } else {
+            p_display[idx_zero] <- "<1e-300"
+          }
+        }
+        
+        out$pvalue <- p_display
+      }
+      
+      if ("padj" %in% names(out)) {
+        padj <- suppressWarnings(as.numeric(out$padj))
+        padj_display <- rep(NA_character_, length(padj))
+        padj_display[is.na(padj)] <- "NA"
+        
+        idx_nonzero <- !is.na(padj) & padj > 0
+        padj_display[idx_nonzero] <- formatC(
+          padj[idx_nonzero],
+          format = "e",
+          digits = digits
+        )
+        
+        idx_zero <- !is.na(padj) & padj == 0
+        padj_display[idx_zero] <- "<1e-300"
+        
+        out$padj <- padj_display
+      }
+      
+      out
+    }
+    
     safe_filename <- function(x) {
       x <- gsub("[^A-Za-z0-9_\\-]+", "_", x)
       x <- gsub("_+", "_", x)
@@ -809,32 +887,40 @@ mod_bulk_de_server <- function(id, bulk_data, groups) {
     })
     
     output$table_sig <- DT::renderDT({
+      df <- format_extreme_de_pvalues(de_sig_search())
+      
       DT::datatable(
-        de_sig_search(),
+        df,
         rownames = FALSE,
         options = list(scrollX = TRUE, pageLength = 15)
       )
     })
     
     output$table_up <- DT::renderDT({
+      df <- format_extreme_de_pvalues(de_up())
+      
       DT::datatable(
-        de_up(),
+        df,
         rownames = FALSE,
         options = list(scrollX = TRUE, pageLength = 15)
       )
     })
     
     output$table_down <- DT::renderDT({
+      df <- format_extreme_de_pvalues(de_down())
+      
       DT::datatable(
-        de_down(),
+        df,
         rownames = FALSE,
         options = list(scrollX = TRUE, pageLength = 15)
       )
     })
     
     output$table_all <- DT::renderDT({
+      df <- format_extreme_de_pvalues(de_full_search())
+      
       DT::datatable(
-        de_full_search(),
+        df,
         rownames = FALSE,
         options = list(scrollX = TRUE, pageLength = 15)
       )
