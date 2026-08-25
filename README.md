@@ -87,7 +87,7 @@ if (!requireNamespace("BiocManager", quietly = TRUE)) {
 }
 
 BiocManager::install(
-  version = "3.22",
+  version = "3.23",
   ask = FALSE,
   update = FALSE
 )
