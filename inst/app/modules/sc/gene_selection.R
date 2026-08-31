@@ -10,6 +10,8 @@
 # - Seurat v4/v5 safe assay access
 # - Missing gene checks
 # - Gene summary table
+# - HVG hover displays gene symbols
+# - Mouse/rat HVG gene labels are italicized in screen and saved plots
 # - Collapsible help and interpretation sections
 # - Session export to outputs/scRNA/sessioninfo/
 # - Downstream-safe return object for PCA and later modules
@@ -282,6 +284,149 @@ mod_sc_gene_selection_server <- function(id, seurat_r, sc_state = NULL) {
       } else {
         ggplot2::theme_bw()
       }
+    }
+    
+    
+    normalize_species_name <- function(x) {
+      if (is.null(x) || length(x) == 0) return(NA_character_)
+      x <- trimws(tolower(as.character(x)[1]))
+      if (!nzchar(x) || is.na(x)) return(NA_character_)
+      
+      if (x %in% c("mouse", "mus musculus", "mmu")) return("Mouse")
+      if (x %in% c("rat", "rattus norvegicus", "rno")) return("Rat")
+      if (x %in% c("human", "homo sapiens", "hsa")) return("Human")
+      
+      NA_character_
+    }
+    
+    detect_species_for_gene_labels <- function(seu, genes = NULL) {
+      candidates <- character(0)
+      
+      # Check common CoTRA/Seurat misc locations first.
+      misc <- tryCatch(seu@misc, error = function(e) NULL)
+      if (is.list(misc)) {
+        candidates <- c(
+          candidates,
+          misc$species,
+          misc$organism,
+          misc$CoTRA_species,
+          misc$CoTRA_organism
+        )
+        
+        if (is.list(misc$CoTRA_import)) {
+          candidates <- c(
+            candidates,
+            misc$CoTRA_import$species,
+            misc$CoTRA_import$organism
+          )
+        }
+      }
+      
+      # Check sc_state parameters when available.
+      if (!is.null(sc_state)) {
+        state_parameters <- tryCatch(sc_state$parameters, error = function(e) NULL)
+        if (is.list(state_parameters)) {
+          candidates <- c(
+            candidates,
+            state_parameters$species,
+            state_parameters$organism
+          )
+          
+          if (is.list(state_parameters$import)) {
+            candidates <- c(
+              candidates,
+              state_parameters$import$species,
+              state_parameters$import$organism
+            )
+          }
+        }
+      }
+      
+      # Check metadata columns if species/organism was stored per cell.
+      meta <- tryCatch(seu@meta.data, error = function(e) NULL)
+      if (is.data.frame(meta) && nrow(meta) > 0) {
+        for (nm in intersect(c("species", "organism", "Species", "Organism"), colnames(meta))) {
+          vals <- unique(as.character(meta[[nm]]))
+          vals <- vals[!is.na(vals) & nzchar(trimws(vals))]
+          if (length(vals) > 0) candidates <- c(candidates, vals[1])
+        }
+      }
+      
+      for (candidate in candidates) {
+        species <- normalize_species_name(candidate)
+        if (!is.na(species)) return(species)
+      }
+      
+      # Fallback for datasets where species metadata is unavailable.
+      # Human symbols are usually all uppercase, whereas mouse and rat symbols
+      # commonly use an initial capital followed by lowercase characters.
+      if (is.null(genes) || length(genes) == 0) {
+        genes <- tryCatch(rownames(seu), error = function(e) character(0))
+      }
+      
+      genes <- unique(as.character(genes))
+      genes <- genes[!is.na(genes) & nzchar(genes)]
+      genes <- genes[!grepl("^ENS", genes)]
+      
+      if (length(genes) > 0) {
+        genes <- head(genes, 2000)
+        human_like <- mean(grepl("^[A-Z0-9.-]+$", genes), na.rm = TRUE)
+        rodent_like <- mean(grepl("^[A-Z][a-z0-9.-]+$", genes), na.rm = TRUE)
+        
+        if (is.finite(rodent_like) &&
+            rodent_like > 0.50 &&
+            rodent_like > human_like) {
+          return("Rodent")
+        }
+        
+        if (is.finite(human_like) && human_like > 0.80) {
+          return("Human")
+        }
+      }
+      
+      NA_character_
+    }
+    
+    build_hvg_plot <- function(seu, assay, hvg) {
+      p <- Seurat::VariableFeaturePlot(seu, assay = assay)
+      
+      # Add the feature name explicitly so Plotly hover always reports the gene.
+      if (!is.null(p$data) && nrow(p$data) > 0) {
+        gene_names <- rownames(p$data)
+        
+        if (is.null(gene_names) || length(gene_names) != nrow(p$data)) {
+          gene_names <- rep(NA_character_, nrow(p$data))
+        }
+        
+        p$data$gene <- as.character(gene_names)
+        p$data$hover_text <- paste0("Gene: ", p$data$gene)
+        p <- p + ggplot2::aes(text = hover_text)
+      }
+      
+      lab <- head(hvg, 15)
+      species_for_labels <- detect_species_for_gene_labels(
+        seu,
+        genes = tryCatch(rownames(seu[[assay]]), error = function(e) hvg)
+      )
+      
+      # Mouse and rat gene symbols are italicized.
+      # "Rodent" is the fallback when metadata are missing but symbol casing
+      # clearly follows mouse/rat nomenclature.
+      gene_fontface <- if (species_for_labels %in% c("Mouse", "Rat", "Rodent")) {
+        "italic"
+      } else {
+        "plain"
+      }
+      
+      p <- Seurat::LabelPoints(
+        plot = p,
+        points = lab,
+        repel = TRUE,
+        fontface = gene_fontface,
+        family = "sans"
+      )
+      
+      p + safe_theme()
     }
     
     assay_choices <- reactive({
@@ -598,11 +743,10 @@ mod_sc_gene_selection_server <- function(id, seurat_r, sc_state = NULL) {
             )
             
             hvg <- Seurat::VariableFeatures(seu, assay = assay)
-            hvg_plot <- tryCatch({
-              p <- Seurat::VariableFeaturePlot(seu, assay = assay)
-              lab <- head(hvg, 15)
-              Seurat::LabelPoints(p, points = lab, repel = TRUE) + safe_theme()
-            }, error = function(e) NULL)
+            hvg_plot <- tryCatch(
+              build_hvg_plot(seu, assay, hvg),
+              error = function(e) NULL
+            )
           } else {
             incProgress(0.35, detail = "Running SCTransform")
             
@@ -625,11 +769,10 @@ mod_sc_gene_selection_server <- function(id, seurat_r, sc_state = NULL) {
             assay <- "SCT"
             available_genes <- rownames(seu[[assay]])
             hvg <- Seurat::VariableFeatures(seu, assay = assay)
-            hvg_plot <- tryCatch({
-              p <- Seurat::VariableFeaturePlot(seu, assay = assay)
-              lab <- head(hvg, 15)
-              Seurat::LabelPoints(p, points = lab, repel = TRUE) + safe_theme()
-            }, error = function(e) NULL)
+            hvg_plot <- tryCatch(
+              build_hvg_plot(seu, assay, hvg),
+              error = function(e) NULL
+            )
           }
         }
         
@@ -759,7 +902,11 @@ mod_sc_gene_selection_server <- function(id, seurat_r, sc_state = NULL) {
     output$hvg_plot <- plotly::renderPlotly({
       p <- hvg_plot_gg()
       if (is.null(p)) return(NULL)
-      plotly::ggplotly(p)
+      
+      plotly::ggplotly(
+        p,
+        tooltip = c("text", "x", "y")
+      )
     })
     
     output$gene_summary_table <- DT::renderDT({
