@@ -551,33 +551,33 @@ mod_bulk_enrich_server <- function(id, deg_data, wgcna_output = NULL, dds.fc = N
       out
     })
     
-
+    
     gene_regulation_lookup <- reactive({
       df <- deg_mapped()
       validate(need("padj" %in% colnames(df), "No padj column found"))
       lc <- lfc_col()
-
+      
       df$lfc_for_network <- suppressWarnings(as.numeric(df[[lc]]))
       keep <- !is.na(df$padj) &
         df$padj <= input$padj_cutoff &
         !is.na(df$lfc_for_network) &
         abs(df$lfc_for_network) >= input$logfc_cutoff
       df <- df[keep, , drop = FALSE]
-
+      
       validate(need(nrow(df) > 0, "No significant genes are available for Cnetplot regulation colours."))
-
+      
       df$Regulation <- ifelse(
         df$lfc_for_network >= input$logfc_cutoff,
         "Upregulated",
         ifelse(df$lfc_for_network <= -input$logfc_cutoff, "Downregulated", NA_character_)
       )
       df <- df[!is.na(df$Regulation), , drop = FALSE]
-
+      
       alias_columns <- intersect(
         c(input$gene_col, "input_id", "SYMBOL", "ENTREZID", "ENSEMBL"),
         colnames(df)
       )
-
+      
       alias_list <- lapply(alias_columns, function(col_nm) {
         data.frame(
           alias = clean_ids(df[[col_nm]]),
@@ -586,14 +586,14 @@ mod_bulk_enrich_server <- function(id, deg_data, wgcna_output = NULL, dds.fc = N
           stringsAsFactors = FALSE
         )
       })
-
+      
       lookup <- do.call(rbind, alias_list)
       lookup <- lookup[!is.na(lookup$alias) & nzchar(lookup$alias), , drop = FALSE]
       lookup <- lookup[order(abs(lookup$log2FC), decreasing = TRUE), , drop = FALSE]
       lookup <- lookup[!duplicated(lookup$alias), , drop = FALSE]
       lookup
     })
-
+    
     normalise_msigdb_collection <- function(collection_value) {
       switch(
         as.character(collection_value),
@@ -905,9 +905,11 @@ mod_bulk_enrich_server <- function(id, deg_data, wgcna_output = NULL, dds.fc = N
         # 12-point pathway labels and 10-point gene labels.
         pathway_label_size <- 12 / 2.845276
         gene_label_size <- 10 / 2.845276
-        # Gene nomenclature formatting
+        # Gene nomenclature formatting:
+        # mouse and rat gene symbols are italic; human labels remain plain.
         gene_fontface <- if (input$organism %in% c("Mouse", "Rat")) {
-          "italic"} else {
+          "italic"
+        } else {
           "plain"
         }
         p <- p +
@@ -991,6 +993,7 @@ mod_bulk_enrich_server <- function(id, deg_data, wgcna_output = NULL, dds.fc = N
             mapping = ggplot2::aes(x = x, y = y, label = label),
             inherit.aes = FALSE,
             family = "Arial",
+            fontface = gene_fontface,
             colour = "black",
             size = gene_label_size,
             max.overlaps = Inf,
