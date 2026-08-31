@@ -905,7 +905,11 @@ mod_bulk_enrich_server <- function(id, deg_data, wgcna_output = NULL, dds.fc = N
         # 12-point pathway labels and 10-point gene labels.
         pathway_label_size <- 12 / 2.845276
         gene_label_size <- 10 / 2.845276
-        
+        # Gene nomenclature formatting
+        gene_fontface <- if (input$organism %in% c("Mouse", "Rat")) {
+          "italic"} else {
+          "plain"
+        }
         p <- p +
           # Pathway nodes: size and fill both represent the number of DE genes.
           ggplot2::geom_point(
