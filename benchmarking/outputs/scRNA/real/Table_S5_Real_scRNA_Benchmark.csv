@@ -1,0 +1,6 @@
+Genes,Cells,WT cells,rd10 cells,PCs used,Runs,Successful runs,Core runtime median (s),Core runtime Q1 (s),Core runtime Q3 (s),Marker runtime median (s),Marker runtime Q1 (s),Marker runtime Q3 (s),Combined runtime median (s),Combined runtime Q1 (s),Combined runtime Q3 (s),Runtime CV (%),Peak RAM median (GB),Peak RAM Q1 (GB),Peak RAM Q3 (GB),Inferred clusters (median; descriptive),Marker rows (median),Notes
+18533,2500,1073,1427,7,5,5,10.696,10.682,10.718,5.009,5.005,5.061,15.721,15.691,15.784,0.486,1.208,1.208,1.208,13,23951,
+18533,5000,2147,2853,7,5,5,16.94,16.938,17.114,9.067,9.012,9.081,26.005,25.911,26.217,0.75,1.958,1.958,1.958,13,24983,
+18533,7500,3220,4280,7,5,5,22.694,22.684,22.726,13.563,13.558,13.577,36.289,36.271,36.383,0.312,2.654,2.654,2.654,14,28820,
+18533,10000,4293,5707,7,5,5,30.122,30.081,30.129,17.197,17.181,17.21,47.291,47.186,47.326,0.435,3.373,3.373,3.373,14,28940,
+18533,10430,4478,5952,7,5,5,25.873,25.789,26.03,20.885,20.88,21.029,46.675,46.674,47.077,0.489,3.362,3.362,3.362,17,32689,"Full retinal dataset. Runtime dip relative to 10,000 cells reflects dataset-size-dependent UMAP/uwot defaults; cluster count is descriptive."
