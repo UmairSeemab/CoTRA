@@ -1,0 +1,40 @@
+Loading prepared real dataset: /home/umair/Downloads/CoTRA/benchmark/real_scRNA_exact/counts_real_007500c.rds
+Benchmark: scrna_real_007500c_rep03
+Dimensions: 18533 genes x 7500 cells
+WT cells: 3220
+rd10 cells: 4280
+PCs calculated: 50
+PCs used downstream: 1:7
+Target full-dataset validation: 16 clusters (0-15)
+Thread mode: single-thread constrained
+Warning: The default method for RunUMAP has changed from calling Python UMAP via reticulate to the R-native UWOT using the cosine metric
+To use Python UMAP via reticulate, set umap.method to 'umap-learn' and metric to 'correlation'
+This message will be shown once per session
+Core workflow completed in 22.684 s
+Inferred Louvain clusters: 14
+Marker analysis completed in 13.699 s
+Marker rows: 28820
+Process peak RSS from /proc: 2717.8 MB
+	Command being timed: "Rscript --vanilla benchmark_scRNA_real.R --input /home/umair/Downloads/CoTRA/benchmark/real_scRNA_exact/counts_real_007500c.rds --rep 3 --seed 1234 --pcs 7 --outdir /home/umair/Downloads/CoTRA/benchmark/benchmark_results/scrna_real_exact"
+	User time (seconds): 36.07
+	System time (seconds): 5.09
+	Percent of CPU this job got: 99%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:41.23
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 2783076
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 0
+	Minor (reclaiming a frame) page faults: 4780714
+	Voluntary context switches: 59
+	Involuntary context switches: 315
+	Swaps: 0
+	File system inputs: 0
+	File system outputs: 14680
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0
