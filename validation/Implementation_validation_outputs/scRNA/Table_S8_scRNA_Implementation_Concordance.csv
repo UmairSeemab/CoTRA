@@ -1,0 +1,15 @@
+Validation metric,CoTRA,Direct Seurat,Concordance
+Input genes,32285,32285,Exact
+Input cells,15106,15106,Exact
+WT cells,7217,7217,Exact
+rd10 cells,7889,7889,Exact
+Clusters,16,16,Exact
+Adjusted Rand Index,,,1.000
+Normalized Mutual Information,,,1.000
+Highly variable genes,2000,2000,Jaccard = 1.000
+HVG intersection,2000,2000,100%
+PCA PC1–PC7,,,Median |r| = 1.000; minimum |r| = 1.000
+Marker rows,38491,38491,Jaccard = 1.000
+Significant marker gene–cluster pairs,,,Jaccard = 1.000
+Overlapping marker pairs,38491,38491,100%
+Marker avg_log2FC,,,Pearson r = 1.000; Spearman ρ = 1.000

@@ -1,0 +1,11 @@
+Method,Scripted replicate,CoTRA genes tested,Scripted genes tested,Matched genes,CoTRA significant genes,Scripted significant genes,Significant-set intersection,Significant-set Jaccard,Direction concordance,log2FC Pearson r,log2FC Spearman rho,Maximum absolute numeric difference after CoTRA post-processing,Exact after documented CoTRA post-processing,DESeq2 raw NA p-values converted to 1,DESeq2 raw NA padj converted to 1
+DESeq2,1,19982,19982,19982,2518,2518,2518,1.0,1.0,1.0,1.0,0.0,True,127,127
+DESeq2,2,19982,19982,19982,2518,2518,2518,1.0,1.0,1.0,1.0,0.0,True,127,127
+DESeq2,3,19982,19982,19982,2518,2518,2518,1.0,1.0,1.0,1.0,0.0,True,127,127
+DESeq2,4,19982,19982,19982,2518,2518,2518,1.0,1.0,1.0,1.0,0.0,True,127,127
+DESeq2,5,19982,19982,19982,2518,2518,2518,1.0,1.0,1.0,1.0,0.0,True,127,127
+edgeR,1,18922,18922,18922,2322,2322,2322,1.0,1.0,1.0,1.0,0.0,True,0,0
+edgeR,2,18922,18922,18922,2322,2322,2322,1.0,1.0,1.0,1.0,0.0,True,0,0
+edgeR,3,18922,18922,18922,2322,2322,2322,1.0,1.0,1.0,1.0,0.0,True,0,0
+edgeR,4,18922,18922,18922,2322,2322,2322,1.0,1.0,1.0,1.0,0.0,True,0,0
+edgeR,5,18922,18922,18922,2322,2322,2322,1.0,1.0,1.0,1.0,0.0,True,0,0

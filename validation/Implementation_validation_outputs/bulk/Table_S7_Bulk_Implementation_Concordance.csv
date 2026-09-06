@@ -1,0 +1,3 @@
+Method,Input contrast,Scripted runs compared,CoTRA genes tested,Scripted genes tested,Matched genes,CoTRA significant genes,Scripted significant genes,Significant-set intersection,Significant-set Jaccard,Direction concordance (%),log2FC Pearson r,log2FC Spearman rho,Maximum absolute numeric difference after CoTRA post-processing,Interpretation
+DESeq2,rd10 vs WT,5,19982,19982,19982,2518,2518,2518,1.0,100.0,1.0,1.0,0.0,"127 DESeq2 genes had NA p/padj in the raw DESeq2 result; CoTRA converts these NA values to 1 before filtering. After this documented post-processing, all exported fields and significance calls matched exactly."
+edgeR,rd10 vs WT,5,18922,18922,18922,2322,2322,2322,1.0,100.0,1.0,1.0,0.0,All compared edgeR statistics and significance calls matched exactly.
