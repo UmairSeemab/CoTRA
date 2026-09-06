@@ -1,0 +1,38 @@
+Loading pre-sized raw count matrix: /home/umair/Downloads/CoTRA/benchmark/synthetic_scRNA/counts_synthetic_050000c.rds
+Benchmark: scrna_synthetic_050000c_rep05
+Dimensions: 20000 genes x 50000 cells
+Species: mouse
+Synthetic truth groups for marker benchmark: 12
+Thread mode: single-thread constrained
+Warning: The default method for RunUMAP has changed from calling Python UMAP via reticulate to the R-native UWOT using the cosine metric
+To use Python UMAP via reticulate, set umap.method to 'umap-learn' and metric to 'correlation'
+This message will be shown once per session
+Core workflow completed in 290.805 s
+Inferred Louvain clusters: 43
+Truth-label marker benchmark completed in 7.721 s
+Truth groups used for markers: 12
+Marker rows: 1800
+Process peak RSS from /proc: 5293.5 MB
+	Command being timed: "Rscript --vanilla benchmark_scRNA_synthetic_v3.R --input /home/umair/Downloads/CoTRA/benchmark/synthetic_scRNA/counts_synthetic_050000c.rds --rep 5 --seed 1234 --species mouse --truth-clusters 12 --outdir /home/umair/Downloads/CoTRA/benchmark/benchmark_results/scrna_synthetic_v3"
+	User time (seconds): 298.27
+	System time (seconds): 4.80
+	Percent of CPU this job got: 99%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 5:03.16
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 5420556
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 0
+	Minor (reclaiming a frame) page faults: 5180727
+	Voluntary context switches: 150
+	Involuntary context switches: 2152
+	Swaps: 0
+	File system inputs: 0
+	File system outputs: 72048
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0

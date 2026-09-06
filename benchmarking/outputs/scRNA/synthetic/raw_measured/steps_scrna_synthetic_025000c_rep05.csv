@@ -1,0 +1,10 @@
+"category","step","elapsed_seconds"
+"core","create_seurat_and_qc_metrics",1.318
+"core","normalize_lognormalize",0.785
+"core","find_variable_features",1.395
+"core","scale_data",1.46
+"core","pca",70.719
+"core","umap",17.275
+"core","find_neighbors",5.762
+"core","find_clusters",3.666
+"marker_truth_labels","find_all_markers_truth_labels",4.069
