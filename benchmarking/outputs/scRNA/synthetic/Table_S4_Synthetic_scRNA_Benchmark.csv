@@ -1,0 +1,6 @@
+Genes,Cells,Runs,Successful runs,Core runtime median (s),Core runtime Q1 (s),Core runtime Q3 (s),Marker runtime median (s),Marker runtime Q1 (s),Marker runtime Q3 (s),Combined runtime median (s),Combined runtime Q1 (s),Combined runtime Q3 (s),Peak RAM median (GB),Peak RAM Q1 (GB),Peak RAM Q3 (GB),Inferred Louvain clusters (median; descriptive),Known simulated groups,Marker rows
+20000,2500,5,5,12.364,12.038,12.866,0.908,0.904,0.922,13.286,12.933,13.77,0.674,0.674,0.681,2,12,1800
+20000,5000,5,5,23.155,23.145,23.186,1.358,1.35,1.359,24.535,24.504,24.545,0.972,0.972,0.972,6,12,1800
+20000,10000,5,5,42.44,42.291,42.465,2.038,2.038,2.046,44.486,44.339,44.503,1.403,1.403,1.403,10,12,1800
+20000,25000,5,5,103.393,103.344,103.601,4.22,4.194,4.225,107.624,107.569,107.821,2.75,2.75,2.75,27,12,1800
+20000,50000,5,5,291.045,290.805,294.997,7.78,7.721,8.294,299.354,298.526,303.291,5.104,4.93,5.169,43,12,1800
