@@ -1,0 +1,36 @@
+Benchmark: bulk_real_DESeq2_rd10_vs_WT_55291g_012s_rep02
+Input: /home/umair/Downloads/CoTRA/data/bulkRNA/raw_gene_counts.tsv
+Dimensions: 55291 genes x 12 samples
+Reference: WT (4)
+Comparison: rd10 (8)
+Contrast: rd10 vs WT
+Positive log2FC = higher in rd10
+Method: DESeq2
+converting counts to integer mode
+Completed in 13.085 s
+Genes tested: 19982
+Significant genes (padj <= 0.05, |log2FC| >= 1): 2518
+Process peak RSS: 902.2 MB
+	Command being timed: "Rscript --vanilla benchmark_bulk_real.R --input /home/umair/Downloads/CoTRA/data/bulkRNA/raw_gene_counts.tsv --method DESeq2 --rep 2 --seed 1234 --reference WT --comparison rd10 --reference-regex ^WT --comparison-regex ^rd10 --outdir /home/umair/Downloads/CoTRA/benchmark/benchmark_results/bulk_real"
+	User time (seconds): 13.30
+	System time (seconds): 0.28
+	Percent of CPU this job got: 99%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:13.59
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 923848
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 0
+	Minor (reclaiming a frame) page faults: 235369
+	Voluntary context switches: 55
+	Involuntary context switches: 293
+	Swaps: 0
+	File system inputs: 0
+	File system outputs: 5640
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0

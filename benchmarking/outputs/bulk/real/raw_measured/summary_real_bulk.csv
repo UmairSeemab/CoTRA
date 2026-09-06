@@ -1,0 +1,3 @@
+"dataset","contrast","method","n_genes_input","n_samples","reference_n","comparison_n","runs","successful_runs","median_runtime_s","q1_runtime_s","q3_runtime_s","median_peak_ram_gb","min_peak_ram_gb","max_peak_ram_gb","median_genes_tested","median_significant"
+"raw_gene_counts.tsv","rd10 vs WT","DESeq2",55291,12,4,8,5,5,12.929,12.783,12.955,0.880966186523438,0.880954742431641,0.881061553955078,19982,2518
+"raw_gene_counts.tsv","rd10 vs WT","edgeR",55291,12,4,8,5,5,2.525,2.516,2.528,0.652267456054688,0.652034759521484,0.652420043945312,18922,2322
