@@ -1,0 +1,151 @@
+Modality,Dataset type,Method/workflow,Dataset size,Size unit,Step,Runs,Median time (s),Q1 time (s),Q3 time (s)
+Bulk RNA-seq,Real retinal,DESeq2,12,samples,differential_expression_DESeq2,5,8.246,8.197,8.252
+Bulk RNA-seq,Real retinal,DESeq2,12,samples,qc_hierarchical_clustering,5,0.0,0.0,0.001
+Bulk RNA-seq,Real retinal,DESeq2,12,samples,qc_pca,5,0.007,0.006,0.007
+Bulk RNA-seq,Real retinal,DESeq2,12,samples,qc_sample_correlation,5,0.001,0.001,0.001
+Bulk RNA-seq,Real retinal,DESeq2,12,samples,qc_top_variable_genes,5,0.336,0.335,0.348
+Bulk RNA-seq,Real retinal,edgeR,12,samples,differential_expression_edgeR,5,1.922,1.919,1.928
+Bulk RNA-seq,Real retinal,edgeR,12,samples,qc_hierarchical_clustering,5,0.001,0.0,0.001
+Bulk RNA-seq,Real retinal,edgeR,12,samples,qc_pca,5,0.007,0.006,0.007
+Bulk RNA-seq,Real retinal,edgeR,12,samples,qc_sample_correlation,5,0.0,0.0,0.001
+Bulk RNA-seq,Real retinal,edgeR,12,samples,qc_top_variable_genes,5,0.34,0.336,0.343
+Bulk RNA-seq,Synthetic,DESeq2,6,samples,differential_expression_DESeq2,5,4.128,4.125,4.159
+Bulk RNA-seq,Synthetic,DESeq2,6,samples,qc_hierarchical_clustering,5,0.001,0.001,0.001
+Bulk RNA-seq,Synthetic,DESeq2,6,samples,qc_pca,5,0.006,0.005,0.006
+Bulk RNA-seq,Synthetic,DESeq2,6,samples,qc_sample_correlation,5,0.0,0.0,0.0
+Bulk RNA-seq,Synthetic,DESeq2,6,samples,qc_top_variable_genes,5,0.117,0.116,0.117
+Bulk RNA-seq,Synthetic,DESeq2,12,samples,differential_expression_DESeq2,5,5.06,5.01,5.355
+Bulk RNA-seq,Synthetic,DESeq2,12,samples,qc_hierarchical_clustering,5,0.0,0.0,0.001
+Bulk RNA-seq,Synthetic,DESeq2,12,samples,qc_pca,5,0.007,0.007,0.007
+Bulk RNA-seq,Synthetic,DESeq2,12,samples,qc_sample_correlation,5,0.0,0.0,0.001
+Bulk RNA-seq,Synthetic,DESeq2,12,samples,qc_top_variable_genes,5,0.122,0.121,0.128
+Bulk RNA-seq,Synthetic,DESeq2,24,samples,differential_expression_DESeq2,5,8.43,8.39,8.469
+Bulk RNA-seq,Synthetic,DESeq2,24,samples,qc_hierarchical_clustering,5,0.002,0.001,0.002
+Bulk RNA-seq,Synthetic,DESeq2,24,samples,qc_pca,5,0.01,0.009,0.01
+Bulk RNA-seq,Synthetic,DESeq2,24,samples,qc_sample_correlation,5,0.002,0.002,0.002
+Bulk RNA-seq,Synthetic,DESeq2,24,samples,qc_top_variable_genes,5,0.153,0.147,0.162
+Bulk RNA-seq,Synthetic,DESeq2,48,samples,differential_expression_DESeq2,5,12.313,12.266,12.394
+Bulk RNA-seq,Synthetic,DESeq2,48,samples,qc_hierarchical_clustering,5,0.006,0.006,0.006
+Bulk RNA-seq,Synthetic,DESeq2,48,samples,qc_pca,5,0.02,0.019,0.02
+Bulk RNA-seq,Synthetic,DESeq2,48,samples,qc_sample_correlation,5,0.007,0.007,0.007
+Bulk RNA-seq,Synthetic,DESeq2,48,samples,qc_top_variable_genes,5,0.166,0.165,0.168
+Bulk RNA-seq,Synthetic,DESeq2,96,samples,differential_expression_DESeq2,5,20.081,20.048,20.088
+Bulk RNA-seq,Synthetic,DESeq2,96,samples,qc_hierarchical_clustering,5,0.025,0.025,0.026
+Bulk RNA-seq,Synthetic,DESeq2,96,samples,qc_pca,5,0.052,0.052,0.053
+Bulk RNA-seq,Synthetic,DESeq2,96,samples,qc_sample_correlation,5,0.023,0.023,0.024
+Bulk RNA-seq,Synthetic,DESeq2,96,samples,qc_top_variable_genes,5,0.194,0.193,0.196
+Bulk RNA-seq,Synthetic,edgeR,6,samples,differential_expression_edgeR,5,1.516,1.513,1.517
+Bulk RNA-seq,Synthetic,edgeR,6,samples,qc_hierarchical_clustering,5,0.0,0.0,0.001
+Bulk RNA-seq,Synthetic,edgeR,6,samples,qc_pca,5,0.006,0.006,0.006
+Bulk RNA-seq,Synthetic,edgeR,6,samples,qc_sample_correlation,5,0.0,0.0,0.001
+Bulk RNA-seq,Synthetic,edgeR,6,samples,qc_top_variable_genes,5,0.132,0.118,0.134
+Bulk RNA-seq,Synthetic,edgeR,12,samples,differential_expression_edgeR,5,1.973,1.972,1.974
+Bulk RNA-seq,Synthetic,edgeR,12,samples,qc_hierarchical_clustering,5,0.0,0.0,0.001
+Bulk RNA-seq,Synthetic,edgeR,12,samples,qc_pca,5,0.007,0.007,0.007
+Bulk RNA-seq,Synthetic,edgeR,12,samples,qc_sample_correlation,5,0.001,0.0,0.001
+Bulk RNA-seq,Synthetic,edgeR,12,samples,qc_top_variable_genes,5,0.139,0.132,0.139
+Bulk RNA-seq,Synthetic,edgeR,24,samples,differential_expression_edgeR,5,2.841,2.837,2.845
+Bulk RNA-seq,Synthetic,edgeR,24,samples,qc_hierarchical_clustering,5,0.001,0.001,0.002
+Bulk RNA-seq,Synthetic,edgeR,24,samples,qc_pca,5,0.011,0.011,0.011
+Bulk RNA-seq,Synthetic,edgeR,24,samples,qc_sample_correlation,5,0.002,0.002,0.002
+Bulk RNA-seq,Synthetic,edgeR,24,samples,qc_top_variable_genes,5,0.151,0.15,0.153
+Bulk RNA-seq,Synthetic,edgeR,48,samples,differential_expression_edgeR,5,4.797,4.795,4.81
+Bulk RNA-seq,Synthetic,edgeR,48,samples,qc_hierarchical_clustering,5,0.006,0.005,0.006
+Bulk RNA-seq,Synthetic,edgeR,48,samples,qc_pca,5,0.019,0.018,0.019
+Bulk RNA-seq,Synthetic,edgeR,48,samples,qc_sample_correlation,5,0.006,0.006,0.006
+Bulk RNA-seq,Synthetic,edgeR,48,samples,qc_top_variable_genes,5,0.162,0.151,0.163
+Bulk RNA-seq,Synthetic,edgeR,96,samples,differential_expression_edgeR,5,8.434,8.426,8.549
+Bulk RNA-seq,Synthetic,edgeR,96,samples,qc_hierarchical_clustering,5,0.03,0.029,0.03
+Bulk RNA-seq,Synthetic,edgeR,96,samples,qc_pca,5,0.054,0.054,0.055
+Bulk RNA-seq,Synthetic,edgeR,96,samples,qc_sample_correlation,5,0.023,0.023,0.023
+Bulk RNA-seq,Synthetic,edgeR,96,samples,qc_top_variable_genes,5,0.191,0.188,0.199
+scRNA-seq,Real retinal,core,2500,cells,create_seurat_and_qc_metrics,5,0.909,0.9,0.916
+scRNA-seq,Real retinal,core,2500,cells,find_clusters,5,0.107,0.107,0.108
+scRNA-seq,Real retinal,core,2500,cells,find_neighbors,5,0.602,0.6,0.605
+scRNA-seq,Real retinal,core,2500,cells,find_variable_features,5,1.189,1.185,1.193
+scRNA-seq,Real retinal,core,2500,cells,normalize_lognormalize,5,0.663,0.652,0.693
+scRNA-seq,Real retinal,core,2500,cells,pca,5,2.074,2.055,2.107
+scRNA-seq,Real retinal,core,2500,cells,scale_data,5,0.343,0.326,0.344
+scRNA-seq,Real retinal,core,2500,cells,umap,5,3.401,3.385,3.413
+scRNA-seq,Real retinal,core,5000,cells,create_seurat_and_qc_metrics,5,1.419,1.398,1.436
+scRNA-seq,Real retinal,core,5000,cells,find_clusters,5,0.285,0.284,0.287
+scRNA-seq,Real retinal,core,5000,cells,find_neighbors,5,1.149,1.14,1.156
+scRNA-seq,Real retinal,core,5000,cells,find_variable_features,5,1.551,1.526,1.561
+scRNA-seq,Real retinal,core,5000,cells,normalize_lognormalize,5,0.964,0.957,0.988
+scRNA-seq,Real retinal,core,5000,cells,pca,5,3.676,3.671,3.685
+scRNA-seq,Real retinal,core,5000,cells,scale_data,5,0.316,0.313,0.338
+scRNA-seq,Real retinal,core,5000,cells,umap,5,6.165,6.144,6.182
+scRNA-seq,Real retinal,core,7500,cells,create_seurat_and_qc_metrics,5,1.735,1.721,1.74
+scRNA-seq,Real retinal,core,7500,cells,find_clusters,5,0.52,0.51,0.522
+scRNA-seq,Real retinal,core,7500,cells,find_neighbors,5,1.706,1.705,1.711
+scRNA-seq,Real retinal,core,7500,cells,find_variable_features,5,1.89,1.884,1.899
+scRNA-seq,Real retinal,core,7500,cells,normalize_lognormalize,5,1.269,1.267,1.284
+scRNA-seq,Real retinal,core,7500,cells,pca,5,4.678,4.659,4.728
+scRNA-seq,Real retinal,core,7500,cells,scale_data,5,0.476,0.465,0.483
+scRNA-seq,Real retinal,core,7500,cells,umap,5,8.947,8.932,8.972
+scRNA-seq,Real retinal,core,10000,cells,create_seurat_and_qc_metrics,5,2.033,2.028,2.059
+scRNA-seq,Real retinal,core,10000,cells,find_clusters,5,0.847,0.827,0.851
+scRNA-seq,Real retinal,core,10000,cells,find_neighbors,5,2.294,2.29,2.298
+scRNA-seq,Real retinal,core,10000,cells,find_variable_features,5,2.242,2.224,2.25
+scRNA-seq,Real retinal,core,10000,cells,normalize_lognormalize,5,1.546,1.545,1.556
+scRNA-seq,Real retinal,core,10000,cells,pca,5,6.371,6.341,6.412
+scRNA-seq,Real retinal,core,10000,cells,scale_data,5,0.627,0.626,0.638
+scRNA-seq,Real retinal,core,10000,cells,umap,5,12.688,12.662,12.701
+scRNA-seq,Real retinal,core,10430,cells,create_seurat_and_qc_metrics,5,2.065,2.064,2.07
+scRNA-seq,Real retinal,core,10430,cells,find_clusters,5,0.898,0.898,0.9
+scRNA-seq,Real retinal,core,10430,cells,find_neighbors,5,2.414,2.409,2.416
+scRNA-seq,Real retinal,core,10430,cells,find_variable_features,5,2.291,2.284,2.325
+scRNA-seq,Real retinal,core,10430,cells,normalize_lognormalize,5,1.592,1.576,1.632
+scRNA-seq,Real retinal,core,10430,cells,pca,5,6.342,6.311,6.383
+scRNA-seq,Real retinal,core,10430,cells,scale_data,5,0.663,0.662,0.667
+scRNA-seq,Real retinal,core,10430,cells,umap,5,8.106,8.104,8.119
+scRNA-seq,Real retinal,markers,2500,cells,find_all_markers_inferred_clusters,5,4.835,4.832,4.879
+scRNA-seq,Real retinal,markers,5000,cells,find_all_markers_inferred_clusters,5,8.881,8.831,8.896
+scRNA-seq,Real retinal,markers,7500,cells,find_all_markers_inferred_clusters,5,13.39,13.365,13.409
+scRNA-seq,Real retinal,markers,10000,cells,find_all_markers_inferred_clusters,5,17.007,16.996,17.035
+scRNA-seq,Real retinal,markers,10430,cells,find_all_markers_inferred_clusters,5,20.728,20.696,20.834
+scRNA-seq,Synthetic,core,2500,cells,create_seurat_and_qc_metrics,5,0.271,0.27,0.326
+scRNA-seq,Synthetic,core,2500,cells,find_clusters,5,0.186,0.186,0.191
+scRNA-seq,Synthetic,core,2500,cells,find_neighbors,5,0.565,0.562,0.605
+scRNA-seq,Synthetic,core,2500,cells,find_variable_features,5,1.027,1.004,1.095
+scRNA-seq,Synthetic,core,2500,cells,normalize_lognormalize,5,0.208,0.205,0.223
+scRNA-seq,Synthetic,core,2500,cells,pca,5,5.247,5.201,5.491
+scRNA-seq,Synthetic,core,2500,cells,scale_data,5,0.409,0.404,0.482
+scRNA-seq,Synthetic,core,2500,cells,umap,5,3.144,3.03,3.306
+scRNA-seq,Synthetic,core,5000,cells,create_seurat_and_qc_metrics,5,0.478,0.475,0.478
+scRNA-seq,Synthetic,core,5000,cells,find_clusters,5,0.402,0.398,0.402
+scRNA-seq,Synthetic,core,5000,cells,find_neighbors,5,1.081,1.077,1.083
+scRNA-seq,Synthetic,core,5000,cells,find_variable_features,5,1.039,1.037,1.04
+scRNA-seq,Synthetic,core,5000,cells,normalize_lognormalize,5,0.246,0.244,0.248
+scRNA-seq,Synthetic,core,5000,cells,pca,5,12.652,12.646,12.661
+scRNA-seq,Synthetic,core,5000,cells,scale_data,5,0.514,0.512,0.516
+scRNA-seq,Synthetic,core,5000,cells,umap,5,5.621,5.619,5.622
+scRNA-seq,Synthetic,core,10000,cells,create_seurat_and_qc_metrics,5,0.599,0.599,0.599
+scRNA-seq,Synthetic,core,10000,cells,find_clusters,5,0.624,0.624,0.627
+scRNA-seq,Synthetic,core,10000,cells,find_neighbors,5,2.195,2.192,2.196
+scRNA-seq,Synthetic,core,10000,cells,find_variable_features,5,1.106,1.102,1.108
+scRNA-seq,Synthetic,core,10000,cells,normalize_lognormalize,5,0.326,0.323,0.327
+scRNA-seq,Synthetic,core,10000,cells,pca,5,24.701,24.674,24.773
+scRNA-seq,Synthetic,core,10000,cells,scale_data,5,0.704,0.703,0.709
+scRNA-seq,Synthetic,core,10000,cells,umap,5,10.972,10.94,11.001
+scRNA-seq,Synthetic,core,25000,cells,create_seurat_and_qc_metrics,5,1.317,1.316,1.317
+scRNA-seq,Synthetic,core,25000,cells,find_clusters,5,3.666,3.64,3.682
+scRNA-seq,Synthetic,core,25000,cells,find_neighbors,5,5.748,5.741,5.753
+scRNA-seq,Synthetic,core,25000,cells,find_variable_features,5,1.385,1.378,1.395
+scRNA-seq,Synthetic,core,25000,cells,normalize_lognormalize,5,0.776,0.775,0.782
+scRNA-seq,Synthetic,core,25000,cells,pca,5,70.701,70.691,70.719
+scRNA-seq,Synthetic,core,25000,cells,scale_data,5,1.46,1.458,1.462
+scRNA-seq,Synthetic,core,25000,cells,umap,5,17.134,17.041,17.191
+scRNA-seq,Synthetic,core,50000,cells,create_seurat_and_qc_metrics,5,2.005,2.003,2.006
+scRNA-seq,Synthetic,core,50000,cells,find_clusters,5,53.217,52.951,53.304
+scRNA-seq,Synthetic,core,50000,cells,find_neighbors,5,12.23,12.215,12.473
+scRNA-seq,Synthetic,core,50000,cells,find_variable_features,5,1.876,1.873,1.882
+scRNA-seq,Synthetic,core,50000,cells,normalize_lognormalize,5,1.229,1.229,1.233
+scRNA-seq,Synthetic,core,50000,cells,pca,5,179.488,179.321,182.798
+scRNA-seq,Synthetic,core,50000,cells,scale_data,5,2.45,2.441,2.452
+scRNA-seq,Synthetic,core,50000,cells,umap,5,37.429,37.253,37.523
+scRNA-seq,Synthetic,marker_truth_labels,2500,cells,find_all_markers_truth_labels,5,0.767,0.764,0.779
+scRNA-seq,Synthetic,marker_truth_labels,5000,cells,find_all_markers_truth_labels,5,1.208,1.205,1.214
+scRNA-seq,Synthetic,marker_truth_labels,10000,cells,find_all_markers_truth_labels,5,1.898,1.898,1.901
+scRNA-seq,Synthetic,marker_truth_labels,25000,cells,find_all_markers_truth_labels,5,4.069,4.044,4.074
+scRNA-seq,Synthetic,marker_truth_labels,50000,cells,find_all_markers_truth_labels,5,7.625,7.568,8.096

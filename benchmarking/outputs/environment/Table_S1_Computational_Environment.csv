@@ -1,0 +1,15 @@
+Item,Value,Notes
+Operating system,Ubuntu 24.04.4 LTS,
+CPU,Intel Core i9-10900 @ 2.80 GHz,10 physical cores / 20 logical processors
+RAM,31 GB,
+R,4.6.1 (2026-06-24),
+Seurat,5.5.1,
+SeuratObject,5.4.0,
+Matrix,1.7.6,
+DESeq2,1.52.0,
+edgeR,4.10.4,
+BLAS,/usr/lib/x86_64-linux-gnu/blas/libblas.so.3.12.0,Matrix products: default
+LAPACK,/usr/lib/x86_64-linux-gnu/lapack/liblapack.so.3.12.0,LAPACK 3.12.0
+Peak-memory measurement,GNU /usr/bin/time -v,Maximum resident set size
+Measured repetitions,5 per condition,Separate preliminary viability/warm-up run excluded from summaries
+Thread restriction,Single-thread constrained,OMP/OpenBLAS/MKL/VECLIB/NUMEXPR set to one where applicable
