@@ -1,0 +1,6 @@
+"step","elapsed_seconds"
+"qc_top_variable_genes",0.194
+"qc_pca",0.0529999999999999
+"qc_sample_correlation",0.024
+"qc_hierarchical_clustering",0.028
+"differential_expression_DESeq2",20.088
