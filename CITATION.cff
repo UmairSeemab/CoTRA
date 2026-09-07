@@ -1,18 +1,29 @@
 cff-version: 1.2.0
-message: "If you use CoTRA in your research, please cite this software and the associated publication."
-
-title: "CoTRA: Comprehensive Toolkit for RNA-seq Analysis"
-
+message: "If you use CoTRA in your research, please cite this software using the metadata from this file."
+title: "CoTRA: Comprehensive Toolbox for RNA Sequencing Data Analysis"
 type: software
-
 authors:
   - family-names: "Seemab"
     given-names: "Umair"
-
-repository-code: "https://github.com/UmairSeemab/CoTRA"
-
-license: "GPL-3.0"
-
+    email: "u.seemab@gmail.com"
 version: "1.0.0"
-
-date-released: "2026-09-07"
+date-released: 2026-09-07
+commit: "ee49510"
+repository-code: "https://github.com/UmairSeemab/CoTRA"
+repository-artifact: "https://github.com/UmairSeemab/CoTRA/releases/tag/v1.0.0"
+url: "https://github.com/UmairSeemab/CoTRA"
+license: "GPL-3.0-only"
+abstract: >-
+  CoTRA is an R/Shiny framework for bulk RNA-seq and single-cell RNA-seq
+  analysis. It provides workflows for data upload, quality control,
+  differential expression, functional enrichment, dimensionality reduction,
+  clustering, annotation, trajectory analysis, pathway activity analysis,
+  differential abundance, cell-cell communication, and report generation.
+keywords:
+  - "RNA-seq"
+  - "single-cell RNA-seq"
+  - "bulk RNA-seq"
+  - "transcriptomics"
+  - "bioinformatics"
+  - "R"
+  - "Shiny"
