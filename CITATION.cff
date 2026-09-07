@@ -1,1 +1,18 @@
+cff-version: 1.2.0
+message: "If you use CoTRA in your research, please cite this software and the associated publication."
 
+title: "CoTRA: Comprehensive Toolkit for RNA-seq Analysis"
+
+type: software
+
+authors:
+  - family-names: "Seemab"
+    given-names: "Umair"
+
+repository-code: "https://github.com/UmairSeemab/CoTRA"
+
+license: "GPL-3.0"
+
+version: "1.0.0"
+
+date-released: "2026-09-07"
