@@ -33,14 +33,18 @@ You can install CoTRA on your workstation (University, work-place) without havin
 
 ```r
 # ============================================================
-# CoTRA - Windows installation WITHOUT administrator rights
+# CoTRA - Windows Installation WITHOUT Administrator Rights
 # ============================================================
 #
-# This script:
-#   1. Creates a personal R library
-#   2. Permanently sets R_LIBS_USER
-#   3. Installs CoTRA dependencies into that library
-#   4. Installs CoTRA from GitHub
+# Run this entire script once in R or RStudio.
+#
+# It will:
+#   - Create a personal R package library
+#   - Save that library permanently using R_LIBS_USER
+#   - Install required installation packages
+#   - Explicitly install hdf5r for 10x Genomics .h5 files
+#   - Install CoTRA and its dependencies
+#   - Verify CoTRA, Seurat and HDF5 support
 #
 # Administrator rights are NOT required.
 #
@@ -50,19 +54,18 @@ You can install CoTRA on your workstation (University, work-place) without havin
 
 
 # ------------------------------------------------------------
-# 1. Check operating system
+# 1. Check Windows
 # ------------------------------------------------------------
 
 if (.Platform$OS.type != "windows") {
-  message(
-    "This installer is designed primarily for Windows.\n",
-    "Installation will continue using a user library."
+  stop(
+    "This installation script is intended for Windows computers."
   )
 }
 
 
 # ------------------------------------------------------------
-# 2. Determine R version
+# 2. R version
 # ------------------------------------------------------------
 
 r_version <- paste0(
@@ -71,46 +74,40 @@ r_version <- paste0(
   strsplit(R.version$minor, "\\.")[[1]][1]
 )
 
-message("R version: ", R.version.string)
+cat("\nR version:\n")
+cat(R.version.string, "\n")
 
 
 # ------------------------------------------------------------
-# 3. Create a user-owned R library
+# 3. Create personal R library
 # ------------------------------------------------------------
 
 local_appdata <- Sys.getenv("LOCALAPPDATA")
 
-if (nzchar(local_appdata)) {
-
-  user_lib <- file.path(
-    local_appdata,
-    "R",
-    "win-library",
-    r_version
-  )
-
-} else {
-
-  # Fallback if LOCALAPPDATA is unavailable
-  user_lib <- file.path(
-    path.expand("~"),
-    "R",
-    "win-library",
-    r_version
-  )
+if (!nzchar(local_appdata)) {
+  local_appdata <- path.expand("~")
 }
 
-# Convert Windows backslashes to forward slashes
-user_lib <- gsub("\\\\", "/", user_lib)
+user_lib <- file.path(
+  local_appdata,
+  "R",
+  "win-library",
+  r_version
+)
 
+user_lib <- gsub(
+  "\\\\",
+  "/",
+  user_lib
+)
 
-message("\nCoTRA packages will be installed in:")
-message(user_lib)
+cat("\nPersonal R library:\n")
+cat(user_lib, "\n")
 
 
 if (!dir.exists(user_lib)) {
 
-  message("\nCreating personal R library...")
+  cat("\nCreating personal R library...\n")
 
   dir.create(
     user_lib,
@@ -121,30 +118,39 @@ if (!dir.exists(user_lib)) {
 
 
 if (!dir.exists(user_lib)) {
+
   stop(
-    "\nCould not create the user library:\n",
+    "\nERROR: Could not create personal R library:\n",
     user_lib,
-    "\n\nPlease check that you have write permission to your user profile."
+    "\n\nCheck that your Windows user account can write ",
+    "to its AppData directory."
   )
 }
 
 
 # ------------------------------------------------------------
-# 4. Permanently configure R_LIBS_USER
+# 4. Permanently set R_LIBS_USER
 # ------------------------------------------------------------
 
+user_home <- path.expand("~")
+
 renviron_file <- file.path(
-  path.expand("~"),
+  user_home,
   ".Renviron"
 )
 
-renviron_file <- gsub("\\\\", "/", renviron_file)
+renviron_file <- gsub(
+  "\\\\",
+  "/",
+  renviron_file
+)
 
-message("\nConfiguring permanent user library...")
-message(".Renviron file: ", renviron_file)
+
+cat("\nConfiguring permanent R library...\n")
+cat(".Renviron location:\n")
+cat(renviron_file, "\n")
 
 
-# Read existing .Renviron without deleting other settings
 if (file.exists(renviron_file)) {
 
   renviron_lines <- readLines(
@@ -158,7 +164,7 @@ if (file.exists(renviron_file)) {
 }
 
 
-# Remove previous R_LIBS_USER setting, if present
+# Remove any existing R_LIBS_USER entry
 renviron_lines <- renviron_lines[
   !grepl(
     "^\\s*R_LIBS_USER\\s*=",
@@ -167,16 +173,14 @@ renviron_lines <- renviron_lines[
 ]
 
 
-# Add permanent R_LIBS_USER
-new_setting <- paste0(
-  'R_LIBS_USER="',
-  user_lib,
-  '"'
-)
-
+# Add permanent personal library
 renviron_lines <- c(
   renviron_lines,
-  new_setting
+  paste0(
+    'R_LIBS_USER="',
+    user_lib,
+    '"'
+  )
 )
 
 
@@ -186,13 +190,8 @@ writeLines(
 )
 
 
-message(
-  "Permanent R_LIBS_USER configured successfully."
-)
-
-
 # ------------------------------------------------------------
-# 5. Activate the library in CURRENT R session
+# 5. Activate library NOW
 # ------------------------------------------------------------
 
 Sys.setenv(
@@ -209,15 +208,15 @@ Sys.setenv(
 )
 
 
-message("\nCurrent R library paths:")
+cat("\nCurrent R library paths:\n")
 
 for (x in .libPaths()) {
-  message("  ", x)
+  cat("  ", x, "\n")
 }
 
 
 # ------------------------------------------------------------
-# 6. Check write permission
+# 6. Confirm that library is writable
 # ------------------------------------------------------------
 
 test_file <- file.path(
@@ -225,41 +224,40 @@ test_file <- file.path(
   "CoTRA_write_test.txt"
 )
 
-write_test <- tryCatch(
-  {
 
-    writeLines(
-      "CoTRA write test",
-      test_file
-    )
+write_ok <- tryCatch({
 
-    unlink(test_file)
-
-    TRUE
-
-  },
-  error = function(e) FALSE
-)
-
-
-if (!write_test) {
-
-  stop(
-    "\nR cannot write to:\n",
-    user_lib,
-    "\n\nInstallation cannot continue."
+  writeLines(
+    "CoTRA write test",
+    test_file
   )
 
-} else {
+  unlink(test_file)
 
-  message(
-    "\nUser library is writable."
+  TRUE
+
+}, error = function(e) {
+
+  FALSE
+
+})
+
+
+if (!write_ok) {
+
+  stop(
+    "\nERROR: R cannot write to:\n",
+    user_lib,
+    "\n\nInstallation cannot continue."
   )
 }
 
 
+cat("\n[OK] Personal R library is writable.\n")
+
+
 # ------------------------------------------------------------
-# 7. Configure CRAN
+# 7. General R installation settings
 # ------------------------------------------------------------
 
 options(
@@ -269,166 +267,429 @@ options(
 )
 
 options(
-  timeout = 1000
+  timeout = 2000
+)
+
+options(
+  Ncpus = max(
+    1,
+    parallel::detectCores(logical = TRUE) - 1
+  )
 )
 
 
 # ------------------------------------------------------------
-# 8. Install BiocManager
+# 8. Function for installing required CRAN packages
 # ------------------------------------------------------------
 
-if (!requireNamespace(
-  "BiocManager",
-  quietly = TRUE,
-  lib.loc = user_lib
-)) {
+install_required_cran <- function(pkg) {
 
-  message(
-    "\nInstalling BiocManager..."
+  if (requireNamespace(
+    pkg,
+    quietly = TRUE
+  )) {
+
+    cat(
+      "[OK]",
+      pkg,
+      "already installed:",
+      as.character(packageVersion(pkg)),
+      "\n"
+    )
+
+    return(invisible(TRUE))
+  }
+
+
+  cat(
+    "\nInstalling required package:",
+    pkg,
+    "\n"
   )
 
-  install.packages(
-    "BiocManager",
-    lib = user_lib,
-    dependencies = TRUE
+
+  # Prefer Windows binary packages.
+  # This avoids compilation when a binary is available.
+  tryCatch({
+
+    install.packages(
+      pkg,
+      lib = user_lib,
+      repos = "https://cloud.r-project.org",
+      type = "binary",
+      dependencies = c(
+        "Depends",
+        "Imports",
+        "LinkingTo"
+      )
+    )
+
+  }, error = function(e) {
+
+    cat(
+      "\nInstallation error for",
+      pkg,
+      ":\n",
+      conditionMessage(e),
+      "\n"
+    )
+  })
+
+
+  if (!requireNamespace(
+    pkg,
+    quietly = TRUE
+  )) {
+
+    stop(
+      "\nERROR: Required package '",
+      pkg,
+      "' could not be installed.\n\n",
+      "CoTRA installation cannot continue."
+    )
+  }
+
+
+  cat(
+    "[OK]",
+    pkg,
+    "installed:",
+    as.character(packageVersion(pkg)),
+    "\n"
   )
 }
 
 
 # ------------------------------------------------------------
-# 9. Configure Bioconductor repositories
+# 9. Install BiocManager
 # ------------------------------------------------------------
 
-suppressPackageStartupMessages(
-  library(
-    BiocManager,
-    lib.loc = user_lib
-  )
+cat(
+  "\n============================================================\n"
 )
+cat(
+  "Installing required installation packages\n"
+)
+cat(
+  "============================================================\n\n"
+)
+
+
+install_required_cran(
+  "BiocManager"
+)
+
+
+# ------------------------------------------------------------
+# 10. Configure CRAN + Bioconductor repositories
+# ------------------------------------------------------------
 
 options(
   repos = BiocManager::repositories()
 )
 
 
-# ------------------------------------------------------------
-# 10. Install remotes
-# ------------------------------------------------------------
-
-if (!requireNamespace(
-  "remotes",
-  quietly = TRUE,
-  lib.loc = user_lib
-)) {
-
-  message(
-    "\nInstalling remotes..."
-  )
-
-  install.packages(
-    "remotes",
-    lib = user_lib,
-    dependencies = TRUE
-  )
-}
-
-
-# ------------------------------------------------------------
-# 11. Install CoTRA
-# ------------------------------------------------------------
-
-message(
-  "\n===================================================="
-)
-
-message(
-  "Installing CoTRA and its dependencies..."
-)
-
-message(
-  "====================================================\n"
-)
-
-
-remotes::install_github(
-  "UmairSeemab/CoTRA",
-  lib = user_lib,
-  dependencies = TRUE,
-  upgrade = "never",
-  build_vignettes = FALSE
+cat("\nBioconductor version detected:\n")
+cat(
+  as.character(
+    BiocManager::version()
+  ),
+  "\n"
 )
 
 
 # ------------------------------------------------------------
-# 12. Verify installation
+# 11. Install remotes
 # ------------------------------------------------------------
 
-message(
-  "\n===================================================="
+install_required_cran(
+  "remotes"
 )
-
-message(
-  "Checking CoTRA installation..."
-)
-
-message(
-  "====================================================\n"
-)
-
-
-if (
-  requireNamespace(
-    "CoTRA",
-    quietly = TRUE,
-    lib.loc = user_lib
-  )
-) {
-
-  cotra_location <- find.package(
-    "CoTRA",
-    lib.loc = user_lib
-  )
-
-  message(
-    "SUCCESS: CoTRA has been installed."
-  )
-
-  message(
-    "\nCoTRA location:"
-  )
-
-  message(
-    cotra_location
-  )
-
-} else {
-
-  stop(
-    "\nCoTRA installation did not complete successfully.\n",
-    "Please review the installation messages above."
-  )
-}
 
 
 # ------------------------------------------------------------
-# 13. Final instructions
+# 12. Install hdf5r explicitly
+# ------------------------------------------------------------
+#
+# IMPORTANT:
+# Seurat::Read10X_h5() requires hdf5r.
+#
+# CoTRA needs this package for:
+#   10x Genomics HDF5 (.h5) input
+#
 # ------------------------------------------------------------
 
 cat(
+  "\n============================================================\n"
+)
+cat(
+  "Installing HDF5 support for 10x Genomics .h5 files\n"
+)
+cat(
+  "============================================================\n\n"
+)
+
+
+install_required_cran(
+  "hdf5r"
+)
+
+
+# ------------------------------------------------------------
+# 13. Verify hdf5r before installing CoTRA
+# ------------------------------------------------------------
+
+if (!requireNamespace(
+  "hdf5r",
+  quietly = TRUE
+)) {
+
+  stop(
+    "\nERROR: hdf5r is unavailable.\n",
+    "10x Genomics HDF5 (.h5) files cannot be imported.\n"
+  )
+}
+
+
+cat(
+  "\n[OK] hdf5r version: ",
+  as.character(
+    packageVersion("hdf5r")
+  ),
+  "\n",
+  sep = ""
+)
+
+
+cat(
+  "[OK] hdf5r location: ",
+  find.package("hdf5r"),
+  "\n",
+  sep = ""
+)
+
+
+# ------------------------------------------------------------
+# 14. Install CoTRA
+# ------------------------------------------------------------
+
+cat(
+  "\n============================================================\n"
+)
+
+cat(
+  "Installing CoTRA and dependencies\n"
+)
+
+cat(
+  "============================================================\n\n"
+)
+
+
+tryCatch({
+
+  remotes::install_github(
+    "UmairSeemab/CoTRA",
+    lib = user_lib,
+    dependencies = TRUE,
+    upgrade = "never",
+    build_vignettes = FALSE,
+    force = TRUE
+  )
+
+}, error = function(e) {
+
+  stop(
+    "\nCoTRA installation failed.\n\n",
+    conditionMessage(e)
+  )
+})
+
+
+# ------------------------------------------------------------
+# 15. Verify CoTRA
+# ------------------------------------------------------------
+
+cat(
+  "\n============================================================\n"
+)
+
+cat(
+  "Verifying CoTRA installation\n"
+)
+
+cat(
+  "============================================================\n\n"
+)
+
+
+required_checks <- c(
+  "CoTRA",
+  "Seurat",
+  "hdf5r"
+)
+
+
+check_results <- sapply(
+  required_checks,
+  function(pkg) {
+
+    requireNamespace(
+      pkg,
+      quietly = TRUE
+    )
+
+  }
+)
+
+
+for (pkg in required_checks) {
+
+  if (check_results[[pkg]]) {
+
+    cat(
+      "[OK] ",
+      pkg,
+      " ",
+      as.character(
+        packageVersion(pkg)
+      ),
+      "\n",
+      sep = ""
+    )
+
+  } else {
+
+    cat(
+      "[MISSING] ",
+      pkg,
+      "\n",
+      sep = ""
+    )
+  }
+}
+
+
+if (!all(check_results)) {
+
+  missing_packages <- names(
+    check_results
+  )[!check_results]
+
+
+  stop(
+    "\nInstallation is incomplete.\n\n",
+    "Missing package(s): ",
+    paste(
+      missing_packages,
+      collapse = ", "
+    ),
+    "\n"
+  )
+}
+
+
+# ------------------------------------------------------------
+# 16. Verify Seurat H5 functionality
+# ------------------------------------------------------------
+
+cat(
+  "\nChecking 10x HDF5 support...\n"
+)
+
+
+if (!exists(
+  "Read10X_h5",
+  envir = asNamespace("Seurat"),
+  inherits = FALSE
+)) {
+
+  stop(
+    "\nERROR: Seurat::Read10X_h5() is unavailable."
+  )
+}
+
+
+if (!requireNamespace(
+  "hdf5r",
+  quietly = TRUE
+)) {
+
+  stop(
+    "\nERROR: hdf5r is unavailable."
+  )
+}
+
+
+cat(
+  "[OK] Seurat::Read10X_h5() is available.\n"
+)
+
+cat(
+  "[OK] hdf5r is available.\n"
+)
+
+cat(
+  "[OK] CoTRA is ready for 10x Genomics HDF5 (.h5) files.\n"
+)
+
+
+# ------------------------------------------------------------
+# 17. Show installation locations
+# ------------------------------------------------------------
+
+cat(
+  "\nInstalled package locations:\n\n"
+)
+
+
+cat(
+  "CoTRA:\n",
+  find.package("CoTRA"),
   "\n\n",
+  sep = ""
+)
+
+
+cat(
+  "Seurat:\n",
+  find.package("Seurat"),
+  "\n\n",
+  sep = ""
+)
+
+
+cat(
+  "hdf5r:\n",
+  find.package("hdf5r"),
+  "\n\n",
+  sep = ""
+)
+
+
+# ------------------------------------------------------------
+# 18. Final message
+# ------------------------------------------------------------
+
+cat(
+  "\n",
   "============================================================\n",
-  "                 CoTRA INSTALLATION COMPLETE\n",
+  "             CoTRA INSTALLATION COMPLETE\n",
   "============================================================\n\n",
-  "Administrator rights were not required.\n\n",
+  "Administrator rights were NOT required.\n\n",
   "Personal R library:\n",
   user_lib,
   "\n\n",
-  "The library path has been saved permanently in:\n",
+  "The library path has been permanently saved in:\n",
   renviron_file,
   "\n\n",
-  "You can now restart R/RStudio and run:\n\n",
+  "10x Genomics HDF5 (.h5) support:\n",
+  "AVAILABLE\n\n",
+  "Restart R or RStudio once.\n\n",
+  "Then start CoTRA using:\n\n",
   "    library(CoTRA)\n",
   "    runCoTRA()\n\n",
+  "You do NOT need to run this installation script again.\n\n",
   "============================================================\n",
   sep = ""
 )
