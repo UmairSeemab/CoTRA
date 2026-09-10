@@ -28,7 +28,7 @@ CoTRA::runCoTRA()
 
 `runCoTRA()` creates a temporary writable copy of the Shiny app. This avoids writing output files inside the installed R package library.
 
-## Install CoTRA without user rights
+## Install CoTRA without Admin rights
 You can install CoTRA on your workstation (University, work-place) without having admin rights by following setup. Just copy it all and run all together.
 
 ```r
