@@ -42,9 +42,7 @@ You can install CoTRA on your workstation (University, work-place) without havin
 #   - Create a personal R package library
 #   - Save that library permanently using R_LIBS_USER
 #   - Install required installation packages
-#   - Explicitly install hdf5r for 10x Genomics .h5 files
 #   - Install CoTRA and its dependencies
-#   - Verify CoTRA, Seurat and HDF5 support
 #
 # Administrator rights are NOT required.
 #
