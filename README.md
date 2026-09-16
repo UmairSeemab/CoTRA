@@ -795,10 +795,6 @@ library(
   CoTRA,
   lib.loc = libpath
 )
-install.packages("remotes")
-remotes::install_github("UmairSeemab/CoTRA", dependencies = TRUE)
-library(CoTRA)
-CoTRA::install_cotra_dependencies()
 cat("\nCoTRA installed successfully\n")
 cat("Version: ")
 print(packageVersion("CoTRA"))
