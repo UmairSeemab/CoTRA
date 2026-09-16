@@ -973,6 +973,58 @@ print(find.package("CoTRA"))
 cat("\nRestart the RStudio session before running CoTRA.\n")
 ```
 
+## To Run CoTRA at CSC
+
+Copy the whole panel and paste it and run it all together. Change the project number and put it your own number if needed. 
+
+```r
+# ============================================================
+# Generic CoTRA launcher for CSC Roihu
+# ============================================================
+
+project_directory <- "/projappl/project_2007629"  # this project number is not standard for every user
+
+r_major_minor <- paste(
+  R.version$major,
+  strsplit(R.version$minor, ".", fixed = TRUE)[[1]][1],
+  sep = "."
+)
+
+libpath <- file.path(
+  project_directory,
+  paste0("CoTRA_Rlibs_R", r_major_minor)
+)
+
+if (!dir.exists(libpath)) {
+  stop(
+    "No CoTRA library was found for R ",
+    r_major_minor,
+    " at:\n",
+    libpath,
+    "\nRun the CoTRA installation script first."
+  )
+}
+
+.libPaths(
+  unique(c(libpath, .libPaths()))
+)
+
+Sys.setenv(
+  R_LIBS_USER = libpath
+)
+
+library(
+  CoTRA,
+  lib.loc = libpath
+)
+
+cat("R version: ", R.version.string, "\n")
+cat("CoTRA version: ", as.character(packageVersion("CoTRA")), "\n")
+cat("Loaded from: ", find.package("CoTRA"), "\n")
+
+CoTRA::runCoTRA()
+```
+
 ## Output folder
 
 After launching CoTRA, open the Home page and select an output folder. CoTRA saves generated reports, figures, CSV tables, ZIP files, and session files into this user-selected folder. If no folder is selected, CoTRA uses `~/CoTRA_Results`.
