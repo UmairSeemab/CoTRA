@@ -709,6 +709,7 @@ BiocCheck::BiocCheck()
 ```
 ## Cloud computer installation (CSC)
 
+Copy the whole panel and paste it in console to run all together. Use your own project number if needed in configuration section.
 ```r
 # ============================================================
 # Generic CoTRA installer for CSC Roihu
@@ -720,7 +721,7 @@ BiocCheck::BiocCheck()
 # 1. Configuration
 # ------------------------------------------------------------
 
-project_directory <- "/projappl/project_2007629"
+project_directory <- "/projappl/project_2007629"  # Use your own project number if needed.
 
 r_major_minor <- paste(
   R.version$major,
