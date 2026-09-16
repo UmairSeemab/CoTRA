@@ -711,11 +711,32 @@ BiocCheck::BiocCheck()
 
 ```r
 # ============================================================
-# CoTRA installation on CSC Roihu
-# r-env/452: R 4.5.2 + Bioconductor 3.22
+# Generic CoTRA installer for CSC Roihu
+# Automatically detects the active R and Bioconductor versions
 # ============================================================
 
-libpath <- "/projappl/project_2007629/CoTRA_Rlibs_452"
+
+# ------------------------------------------------------------
+# 1. Configuration
+# ------------------------------------------------------------
+
+project_directory <- "/projappl/project_2007629"
+
+r_major_minor <- paste(
+  R.version$major,
+  strsplit(R.version$minor, ".", fixed = TRUE)[[1]][1],
+  sep = "."
+)
+
+libpath <- file.path(
+  project_directory,
+  paste0("CoTRA_Rlibs_R", r_major_minor)
+)
+
+
+# ------------------------------------------------------------
+# 2. Create and activate the version-specific library
+# ------------------------------------------------------------
 
 dir.create(
   libpath,
@@ -724,55 +745,191 @@ dir.create(
 )
 
 .libPaths(
-  c(
-    libpath,
-    .libPaths()
-  )
+  unique(c(libpath, .libPaths()))
 )
 
-options(
-  repos = c(
-    CRAN = "https://cloud.r-project.org"
-  ),
-  timeout = 2000
+Sys.setenv(
+  R_LIBS_USER = libpath
 )
 
 cat("R version:\n")
 print(R.version.string)
 
+cat("\nCoTRA library:\n")
+print(libpath)
+
+cat("\nActive R library paths:\n")
+print(.libPaths())
+
+
 # ------------------------------------------------------------
-# BiocManager
+# 3. Configure CRAN
 # ------------------------------------------------------------
 
-if (!requireNamespace("BiocManager", quietly = TRUE)) {
+options(
+  repos = c(CRAN = "https://cloud.r-project.org"),
+  timeout = 2000
+)
+
+
+# ------------------------------------------------------------
+# 4. Install basic installation tools
+# ------------------------------------------------------------
+
+installation_tools <- c(
+  "BiocManager",
+  "remotes"
+)
+
+missing_tools <- installation_tools[
+  !vapply(
+    installation_tools,
+    requireNamespace,
+    logical(1),
+    quietly = TRUE
+  )
+]
+
+if (length(missing_tools) > 0) {
   install.packages(
-    "BiocManager",
-    lib = libpath
+    missing_tools,
+    lib = libpath,
+    dependencies = TRUE,
+    type = "source"
   )
 }
 
-BiocManager::install(
-  version = "3.23",
-  ask = FALSE,
-  update = FALSE
+
+# ------------------------------------------------------------
+# 5. Configure the matching Bioconductor version
+# ------------------------------------------------------------
+
+bioconductor_version <- as.character(
+  BiocManager::version()
+)
+
+options(
+  repos = BiocManager::repositories()
 )
 
 cat("\nBioconductor version:\n")
-print(BiocManager::version())
+print(bioconductor_version)
+
 
 # ------------------------------------------------------------
-# remotes
+# 6. Remove locks from previous failed installations
 # ------------------------------------------------------------
 
-if (!requireNamespace("remotes", quietly = TRUE)) {
-  install.packages(
-    "remotes",
-    lib = libpath
+lock_directories <- list.files(
+  libpath,
+  pattern = "^00LOCK",
+  full.names = TRUE
+)
+
+if (length(lock_directories) > 0) {
+  unlink(
+    lock_directories,
+    recursive = TRUE,
+    force = TRUE
   )
 }
 
+
 # ------------------------------------------------------------
-# Install CoTRA
+# 7. Check and repair websocket
+# ------------------------------------------------------------
+
+websocket_works <- tryCatch(
+  requireNamespace("websocket", quietly = TRUE),
+  error = function(e) FALSE
+)
+
+if (!websocket_works) {
+
+  installed_local <- rownames(
+    installed.packages(lib.loc = libpath)
+  )
+
+  packages_to_remove <- intersect(
+    c("websocket", "webshot2"),
+    installed_local
+  )
+
+  for (pkg in packages_to_remove) {
+    try(
+      remove.packages(
+        pkg,
+        lib = libpath
+      ),
+      silent = TRUE
+    )
+  }
+
+  install.packages(
+    "websocket",
+    lib = libpath,
+    dependencies = TRUE,
+    type = "source"
+  )
+}
+
+if (!requireNamespace("websocket", quietly = TRUE)) {
+  stop(
+    "The websocket package could not be loaded. ",
+    "Restart RStudio and run this script again."
+  )
+}
+
+
+# ------------------------------------------------------------
+# 8. Install webshot2
+# ------------------------------------------------------------
+
+webshot2_works <- tryCatch(
+  requireNamespace("webshot2", quietly = TRUE),
+  error = function(e) FALSE
+)
+
+if (!webshot2_works) {
+  install.packages(
+    "webshot2",
+    lib = libpath,
+    dependencies = TRUE,
+    type = "source"
+  )
+}
+
+if (!requireNamespace("webshot2", quietly = TRUE)) {
+  stop("The webshot2 package could not be installed or loaded.")
+}
+
+
+# ------------------------------------------------------------
+# 9. Install ReactomePA
+# ------------------------------------------------------------
+
+reactome_works <- tryCatch(
+  requireNamespace("ReactomePA", quietly = TRUE),
+  error = function(e) FALSE
+)
+
+if (!reactome_works) {
+  BiocManager::install(
+    "ReactomePA",
+    lib = libpath,
+    ask = FALSE,
+    update = FALSE,
+    force = TRUE
+  )
+}
+
+if (!requireNamespace("ReactomePA", quietly = TRUE)) {
+  stop("The ReactomePA package could not be installed or loaded.")
+}
+
+
+# ------------------------------------------------------------
+# 10. Install CoTRA
 # ------------------------------------------------------------
 
 remotes::install_github(
@@ -787,20 +944,33 @@ remotes::install_github(
   lib = libpath
 )
 
+
 # ------------------------------------------------------------
-# Test installation
+# 11. Verify the installation
 # ------------------------------------------------------------
 
 library(
   CoTRA,
   lib.loc = libpath
 )
-cat("\nCoTRA installed successfully\n")
-cat("Version: ")
+
+cat("\n============================================\n")
+cat("CoTRA installed successfully\n")
+cat("============================================\n")
+
+cat("\nR version:\n")
+print(R.version.string)
+
+cat("\nBioconductor version:\n")
+print(BiocManager::version())
+
+cat("\nCoTRA version:\n")
 print(packageVersion("CoTRA"))
 
-cat("\nInstallation path:\n")
+cat("\nCoTRA installation directory:\n")
 print(find.package("CoTRA"))
+
+cat("\nRestart the RStudio session before running CoTRA.\n")
 ```
 
 ## Output folder
