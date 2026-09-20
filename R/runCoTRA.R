@@ -12,13 +12,29 @@ runCoTRA <- function(app_dir = NULL,
                      ask = interactive(),
                      launch.browser = TRUE) {
   if (install_missing) {
-    install_cotra_dependencies(ask = ask)
+    tryCatch(
+      install_cotra_dependencies(ask = ask),
+      error = function(e) {
+        stop(
+          paste0(
+            "CoTRA dependency setup failed before the app could start.\n\n",
+            conditionMessage(e),
+            "\n\nYou can retry directly with:\n",
+            "  CoTRA::install_cotra_dependencies(ask = FALSE)\n\n",
+            "Container installation is recommended when native system-library ",
+            "compilation is not desired."
+          ),
+          call. = FALSE
+        )
+      }
+    )
   } else {
     deps <- check_cotra_dependencies(quiet = TRUE)
-    if (length(deps$missing) > 0) {
+    if (length(deps$missing) > 0L) {
       stop(
-        "Missing CoTRA dependencies: ", paste(deps$missing, collapse = ", "),
-        "\nRun CoTRA::install_cotra_dependencies() first.",
+        "Missing or unloadable CoTRA dependencies: ",
+        paste(deps$missing, collapse = ", "),
+        "\nRun CoTRA::install_cotra_dependencies(ask = FALSE) first.",
         call. = FALSE
       )
     }
@@ -27,7 +43,10 @@ runCoTRA <- function(app_dir = NULL,
   pkg_app <- system.file("app", package = "CoTRA", mustWork = TRUE)
 
   if (is.null(app_dir)) {
-    app_dir <- file.path(tempdir(), paste0("CoTRA_app_", format(Sys.time(), "%Y%m%d_%H%M%S")))
+    app_dir <- file.path(
+      tempdir(),
+      paste0("CoTRA_app_", format(Sys.time(), "%Y%m%d_%H%M%S"))
+    )
   }
 
   if (dir.exists(app_dir)) {
@@ -39,7 +58,10 @@ runCoTRA <- function(app_dir = NULL,
   if (!ok || !dir.exists(copied)) {
     stop("Could not create a writable CoTRA app copy.", call. = FALSE)
   }
-  file.rename(copied, app_dir)
+
+  if (!file.rename(copied, app_dir)) {
+    stop("Could not prepare the writable CoTRA app copy.", call. = FALSE)
+  }
 
   oldwd <- getwd()
   on.exit(setwd(oldwd), add = TRUE)
