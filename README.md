@@ -885,17 +885,3 @@ docker pull ghcr.io/umairseemab/cotra:latest
 The image includes Pandoc, but it does not currently install Google Chrome or Chromium. If a report path specifically requires `webshot2`, `pagedown`, or another headless-Chrome operation, validate that workflow separately before treating browser-based PDF capture as supported across both AMD64 and ARM64 images.
 
 ---
-
-# Development notes
-
-The Dockerfile installs dependencies before launching the application and fails the image build if the dependency verification step reports missing declared CoTRA dependencies. This moves most package installation failures from the end user's computer into CI, where they can be fixed once for all users.
-
-When changing CoTRA dependencies:
-
-1. Update `DESCRIPTION` where appropriate.
-2. Update `R/dependencies.R`.
-3. Rebuild the container.
-4. Check the GitHub Actions build for both architectures.
-5. Test representative bulk RNA-seq and scRNA-seq workflows.
-6. Publish a versioned container tag for a release.
-
