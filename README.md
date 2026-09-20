@@ -426,7 +426,7 @@ For CSC/Roihu, use the Apptainer module and storage paths appropriate for your C
 
 # Native R installation
 
-Container installation is recommended for users who want a predefined environment. Native installation remains available for developers and users who prefer direct R/RStudio access.
+Container installation is recommended when you want a predefined and reproducible environment. Native installation remains available for developers and users who prefer to run CoTRA directly from R or RStudio.
 
 ## Requirements
 
@@ -436,23 +436,39 @@ CoTRA currently declares:
 R >= 4.4.0
 ```
 
-Install CoTRA from GitHub:
+For native installation, some dependencies may require system compilers or system libraries. This is especially relevant on macOS, where packages used by `celldex`, `monocle3`, `BPCells`, and related Bioconductor workflows may require OpenSSL and HDF5.
+
+## Recommended native R installation
+
+Install `remotes` first if it is not already available:
 
 ```r
-install.packages("remotes")
+if (!requireNamespace("remotes", quietly = TRUE)) {
+  install.packages("remotes")
+}
+```
+
+Install or reinstall CoTRA without asking `remotes` to resolve the complete dependency stack first:
+
+```r
 remotes::install_github(
   "UmairSeemab/CoTRA",
-  dependencies = TRUE,
-  upgrade = "never"
+  dependencies = FALSE,
+  upgrade = "never",
+  force = TRUE
 )
-```
 
-Install the analysis dependency stack:
-
-```r
 library(CoTRA)
 CoTRA::install_cotra_dependencies(ask = FALSE)
+CoTRA::check_cotra_dependencies()
+CoTRA::runCoTRA()
 ```
+
+Using `dependencies = FALSE` here is intentional. CoTRA installs its analysis dependency stack through `CoTRA::install_cotra_dependencies()`, which handles CRAN, Bioconductor, and GitHub dependencies in the required order.
+
+`CoTRA::check_cotra_dependencies()` can be run at any time to verify that the required packages are available.
+
+`runCoTRA()` creates a temporary writable copy of the Shiny application so CoTRA does not write generated output inside the installed R package directory.
 
 For 10x Genomics HDF5 input, ensure `hdf5r` is installed:
 
@@ -460,20 +476,173 @@ For 10x Genomics HDF5 input, ensure `hdf5r` is installed:
 install.packages("hdf5r")
 ```
 
-Run CoTRA:
+---
+
+## Native installation on macOS
+
+### Apple Silicon Macs: M1, M2, M3, M4 and later
+
+CoTRA can run natively on Apple Silicon. R should use the ARM64 build.
+
+Check your architecture from R:
 
 ```r
+R.version$arch
+R.version$platform
+sessionInfo()
+```
+
+On Apple Silicon, the architecture should normally indicate `arm64` or `aarch64`.
+
+Some CoTRA dependencies compile native code and require HDF5, OpenSSL, `pkg-config`, and the Apple Command Line Tools.
+
+### 1. Install Apple Command Line Tools
+
+Open Terminal and run:
+
+```bash
+xcode-select --install
+```
+
+If macOS reports that the Command Line Tools are already installed, continue to the next step.
+
+### 2. Install Homebrew if needed
+
+Check whether Homebrew is available:
+
+```bash
+brew --version
+```
+
+If Homebrew is not installed, install it from:
+
+```text
+https://brew.sh/
+```
+
+### 3. Install required system libraries
+
+Run:
+
+```bash
+brew install hdf5 pkgconf openssl@3
+```
+
+Verify HDF5:
+
+```bash
+which h5cc
+which pkg-config
+pkg-config hdf5 --cflags --libs
+```
+
+On Apple Silicon, Homebrew is normally installed under:
+
+```text
+/opt/homebrew
+```
+
+On Intel Macs, it is commonly installed under:
+
+```text
+/usr/local
+```
+
+### 4. Configure the current R session if required
+
+Normally the updated CoTRA dependency installer detects Homebrew automatically. If a source package still cannot locate HDF5 or OpenSSL, run the following in R before installing dependencies:
+
+```r
+brew_prefix <- Sys.which("brew")
+
+if (nzchar(brew_prefix)) {
+  brew_prefix <- system2(
+    brew_prefix,
+    "--prefix",
+    stdout = TRUE
+  )[1]
+
+  hdf5_prefix <- system2(
+    file.path(brew_prefix, "bin", "brew"),
+    c("--prefix", "hdf5"),
+    stdout = TRUE
+  )[1]
+
+  openssl_prefix <- system2(
+    file.path(brew_prefix, "bin", "brew"),
+    c("--prefix", "openssl@3"),
+    stdout = TRUE
+  )[1]
+
+  Sys.setenv(
+    PATH = paste(
+      file.path(brew_prefix, "bin"),
+      Sys.getenv("PATH"),
+      sep = ":"
+    ),
+    PKG_CONFIG_PATH = paste(
+      file.path(hdf5_prefix, "lib", "pkgconfig"),
+      file.path(openssl_prefix, "lib", "pkgconfig"),
+      Sys.getenv("PKG_CONFIG_PATH"),
+      sep = ":"
+    ),
+    CPPFLAGS = paste(
+      paste0("-I", file.path(openssl_prefix, "include")),
+      paste0("-I", file.path(hdf5_prefix, "include")),
+      Sys.getenv("CPPFLAGS")
+    ),
+    LDFLAGS = paste(
+      paste0("-L", file.path(openssl_prefix, "lib")),
+      paste0("-L", file.path(hdf5_prefix, "lib")),
+      Sys.getenv("LDFLAGS")
+    )
+  )
+}
+```
+
+Then run:
+
+```r
+remotes::install_github(
+  "UmairSeemab/CoTRA",
+  dependencies = FALSE,
+  upgrade = "never",
+  force = TRUE
+)
+
 library(CoTRA)
+CoTRA::install_cotra_dependencies(ask = FALSE)
+CoTRA::check_cotra_dependencies()
 CoTRA::runCoTRA()
 ```
 
-`runCoTRA()` creates a temporary writable copy of the Shiny application so CoTRA does not write generated output inside the installed R package directory.
+### macOS installation helper
+
+The repository also provides:
+
+```text
+install_CoTRA_MacOS.command
+```
+
+After downloading or cloning the repository, make it executable if necessary:
+
+```bash
+chmod +x install_CoTRA_MacOS.command
+```
+
+Then run:
+
+```bash
+./install_CoTRA_MacOS.command
+```
+
+The macOS installer checks the required Apple build tools and Homebrew system libraries before starting the R dependency installation.
 
 ---
 
 ## Existing native installation helper files
 
-The repository also contains:
+The repository contains:
 
 ```text
 install_cotra_packages.R
@@ -502,6 +671,7 @@ r_version <- paste0(
 )
 
 local_appdata <- Sys.getenv("LOCALAPPDATA")
+
 if (!nzchar(local_appdata)) {
   local_appdata <- path.expand("~")
 }
@@ -513,7 +683,11 @@ user_lib <- file.path(
   r_version
 )
 
-dir.create(user_lib, recursive = TRUE, showWarnings = FALSE)
+dir.create(
+  user_lib,
+  recursive = TRUE,
+  showWarnings = FALSE
+)
 
 Sys.setenv(R_LIBS_USER = user_lib)
 .libPaths(unique(c(user_lib, .libPaths())))
@@ -532,13 +706,15 @@ install.packages(
 remotes::install_github(
   "UmairSeemab/CoTRA",
   lib = user_lib,
-  dependencies = TRUE,
+  dependencies = FALSE,
   upgrade = "never",
   force = TRUE
 )
 
 library(CoTRA, lib.loc = user_lib)
+
 CoTRA::install_cotra_dependencies(ask = FALSE)
+CoTRA::check_cotra_dependencies()
 CoTRA::runCoTRA()
 ```
 
@@ -555,7 +731,11 @@ project_directory <- "/projappl/project_XXXXXXX"
 
 r_major_minor <- paste(
   R.version$major,
-  strsplit(R.version$minor, ".", fixed = TRUE)[[1]][1],
+  strsplit(
+    R.version$minor,
+    ".",
+    fixed = TRUE
+  )[[1]][1],
   sep = "."
 )
 
@@ -564,7 +744,12 @@ libpath <- file.path(
   paste0("CoTRA_Rlibs_R", r_major_minor)
 )
 
-dir.create(libpath, recursive = TRUE, showWarnings = FALSE)
+dir.create(
+  libpath,
+  recursive = TRUE,
+  showWarnings = FALSE
+)
+
 .libPaths(unique(c(libpath, .libPaths())))
 Sys.setenv(R_LIBS_USER = libpath)
 
@@ -581,14 +766,16 @@ install.packages(
 
 remotes::install_github(
   "UmairSeemab/CoTRA",
-  dependencies = TRUE,
+  dependencies = FALSE,
   upgrade = "never",
   force = TRUE,
   lib = libpath
 )
 
 library(CoTRA, lib.loc = libpath)
+
 CoTRA::install_cotra_dependencies(ask = FALSE)
+CoTRA::check_cotra_dependencies()
 ```
 
 Run later with:
@@ -598,7 +785,11 @@ project_directory <- "/projappl/project_XXXXXXX"
 
 r_major_minor <- paste(
   R.version$major,
-  strsplit(R.version$minor, ".", fixed = TRUE)[[1]][1],
+  strsplit(
+    R.version$minor,
+    ".",
+    fixed = TRUE
+  )[[1]][1],
   sep = "."
 )
 
@@ -611,6 +802,8 @@ libpath <- file.path(
 Sys.setenv(R_LIBS_USER = libpath)
 
 library(CoTRA, lib.loc = libpath)
+
+CoTRA::check_cotra_dependencies()
 CoTRA::runCoTRA()
 ```
 
