@@ -1,0 +1,15 @@
+Bootstrap: docker
+From: ghcr.io/umairseemab/cotra:latest
+
+%labels
+    Author Umair Seemab
+    Application CoTRA
+
+%environment
+    export COTRA_HOST=0.0.0.0
+    export COTRA_PORT=3838
+    export COTRA_DATA_DIR=/data
+    export COTRA_RESULTS_DIR=/results
+
+%runscript
+    exec /usr/local/bin/start-cotra

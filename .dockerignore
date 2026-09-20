@@ -1,0 +1,14 @@
+.git
+.github
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+*.Rproj
+benchmarking
+validation
+CoTRA_data
+CoTRA_results
+*.tar.gz
+*.zip
+*.sif

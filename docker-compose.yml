@@ -1,0 +1,15 @@
+services:
+  cotra:
+    image: ghcr.io/umairseemab/cotra:latest
+    container_name: cotra
+    ports:
+      - "3838:3838"
+    volumes:
+      - ./CoTRA_data:/data
+      - ./CoTRA_results:/results
+    environment:
+      COTRA_HOST: 0.0.0.0
+      COTRA_PORT: 3838
+      COTRA_DATA_DIR: /data
+      COTRA_RESULTS_DIR: /results
+    restart: unless-stopped

@@ -1,87 +1,507 @@
-# Note before installation
-Make sure you have latest version of R installed before installing CoTRA
-
 # CoTRA
 
-CoTRA, Comprehensive Toolbox for RNA Sequencing Data Analysis, is a Shiny-based graphical interface for bulk RNA-seq and single-cell RNA-seq workflows.
+CoTRA, Comprehensive Toolbox for RNA Sequencing Data Analysis, is an R/Shiny application for bulk RNA-seq and single-cell RNA-seq analysis.
 
-## Install from GitHub
+CoTRA can be used in two ways:
+
+1. **Container installation, recommended**: Docker on Windows, macOS, and Ubuntu/Linux, or Apptainer on HPC systems. R and the CoTRA R-package dependency stack are installed inside the image.
+2. **Native R installation**: install CoTRA directly into your local R/RStudio environment.
+
+The container route is recommended when you want the most consistent environment across computers and want to avoid repeated local R/Bioconductor dependency installation.
+
+---
+
+## 1. Recommended: run CoTRA in a container
+
+### What the container provides
+
+The CoTRA image is built from a versioned Rocker R image and contains:
+
+- R 4.5.2
+- CoTRA
+- CoTRA CRAN dependencies
+- CoTRA Bioconductor dependencies
+- CoTRA GitHub dependencies declared in `R/dependencies.R`
+- HDF5 support through `hdf5r` and system HDF5 libraries
+- system libraries required by common CoTRA dependencies
+- Pandoc
+- persistent `/data` and `/results` locations
+- an application health check
+
+The GitHub Actions workflow targets:
+
+```text
+linux/amd64
+linux/arm64
+```
+
+This allows the same containerized CoTRA environment to be used through Docker Desktop on Windows and macOS and through Docker Engine on Ubuntu/Linux. Apple Silicon Macs use the `arm64` image when the multi-platform build succeeds.
+
+The first GitHub Actions build should be treated as the validation step for the complete dependency stack on both architectures.
+
+### Important scope
+
+The container covers the CoTRA application and its R/system-library environment. Upstream command-line preprocessing and alignment tools such as FastQC, STAR, HTSeq, and MultiQC are not bundled in this image because they are not part of the current CoTRA Shiny application runtime.
+
+If a future CoTRA module directly invokes one of these tools, add it to the Docker image and validate it in CI.
+
+---
+
+## 2. Container file layout
+
+Add the following files to the repository:
+
+```text
+CoTRA/
+├── README.md
+├── Dockerfile
+├── docker-compose.yml
+├── .dockerignore
+├── docker/
+│   ├── install-dependencies.R
+│   ├── start-cotra.sh
+│   └── healthcheck.R
+├── launchers/
+│   ├── CoTRA-Windows.bat
+│   ├── CoTRA-Windows.ps1
+│   ├── CoTRA-macOS.command
+│   └── CoTRA-Ubuntu.sh
+├── apptainer/
+│   └── CoTRA.def
+└── .github/
+    └── workflows/
+        └── docker-build.yml
+```
+
+Do not maintain a separate `CONTAINER_README.md`. Container instructions are included here so users have one installation document.
+
+---
+
+## 3. Publish the CoTRA image with GitHub Actions
+
+After the container files are committed, the workflow at:
+
+```text
+.github/workflows/docker-build.yml
+```
+
+builds and publishes the image to GitHub Container Registry.
+
+The expected image name is:
+
+```text
+ghcr.io/umairseemab/cotra:latest
+```
+
+A Git tag such as:
+
+```text
+v0.1.0
+```
+
+also produces a versioned image tag.
+
+After the first successful workflow run, check the GitHub package settings. If anonymous users cannot pull the image, change the package visibility to **Public**.
+
+The workflow has `packages: write` permission and publishes both `linux/amd64` and `linux/arm64` images.
+
+---
+
+## 4. Windows
+
+### Requirements
+
+Install and start Docker Desktop.
+
+No separate R, RStudio, CRAN, or Bioconductor installation is required for the container route.
+
+### Recommended launcher
+
+Download or clone the CoTRA repository and run:
+
+```text
+launchers/CoTRA-Windows.ps1
+```
+
+Alternatively, double-click:
+
+```text
+launchers/CoTRA-Windows.bat
+```
+
+The launcher will:
+
+- check that Docker is available
+- pull the latest CoTRA image
+- create persistent `CoTRA_data` and `CoTRA_results` folders
+- start the container
+- wait for the health check
+- open `http://localhost:3838`
+
+To stop CoTRA:
+
+```powershell
+docker stop cotra
+```
+
+---
+
+## 5. macOS
+
+### Requirements
+
+Install and start Docker Desktop.
+
+The GitHub Actions workflow targets both Intel/AMD64 and ARM64 container architectures.
+
+Make the launcher executable once after cloning if needed:
+
+```bash
+chmod +x launchers/CoTRA-macOS.command
+```
+
+Run:
+
+```bash
+./launchers/CoTRA-macOS.command
+```
+
+The launcher opens:
+
+```text
+http://localhost:3838
+```
+
+To stop CoTRA:
+
+```bash
+docker stop cotra
+```
+
+---
+
+## 6. Ubuntu/Linux
+
+### Requirements
+
+Install Docker Engine and ensure your user can run Docker.
+
+Make the launcher executable once after cloning:
+
+```bash
+chmod +x launchers/CoTRA-Ubuntu.sh
+```
+
+Run:
+
+```bash
+./launchers/CoTRA-Ubuntu.sh
+```
+
+Then open:
+
+```text
+http://localhost:3838
+```
+
+To stop CoTRA:
+
+```bash
+docker stop cotra
+```
+
+---
+
+## 7. Run directly with Docker
+
+After the GHCR image has been published:
+
+```bash
+docker pull ghcr.io/umairseemab/cotra:latest
+```
+
+Create local data and result directories:
+
+```bash
+mkdir -p CoTRA_data CoTRA_results
+```
+
+Run CoTRA:
+
+```bash
+docker run --rm --name cotra \
+  -p 3838:3838 \
+  -v "$(pwd)/CoTRA_data:/data" \
+  -v "$(pwd)/CoTRA_results:/results" \
+  ghcr.io/umairseemab/cotra:latest
+```
+
+Open:
+
+```text
+http://localhost:3838
+```
+
+On Windows PowerShell, the provided Windows launcher is simpler than manually translating the volume paths.
+
+---
+
+## 8. Docker Compose
+
+From the repository root:
+
+```bash
+docker compose pull
+docker compose up -d
+```
+
+Open:
+
+```text
+http://localhost:3838
+```
+
+View logs:
+
+```bash
+docker compose logs -f cotra
+```
+
+Stop CoTRA:
+
+```bash
+docker compose down
+```
+
+---
+
+## 9. Data and output folders
+
+The container uses two mounted locations:
+
+```text
+/data
+/results
+```
+
+They map to these folders in the repository directory:
+
+```text
+CoTRA_data/
+CoTRA_results/
+```
+
+You can place input datasets in:
+
+```text
+CoTRA_data/
+```
+
+Inside the container they are available under:
+
+```text
+/data
+```
+
+The container launcher sets its home directory to `/results`. CoTRA's existing default output path `~/CoTRA_Results` therefore becomes:
+
+```text
+/results/CoTRA_Results
+```
+
+On the host computer, those default results appear under:
+
+```text
+CoTRA_results/CoTRA_Results/
+```
+
+You can still select another writable output directory from the CoTRA interface.
+
+---
+
+## 10. Build the image locally
+
+You can build CoTRA before publishing it to GHCR.
+
+From the repository root:
+
+```bash
+docker build -t cotra:local .
+```
+
+Run the local image:
+
+```bash
+docker run --rm --name cotra \
+  -p 3838:3838 \
+  -v "$(pwd)/CoTRA_data:/data" \
+  -v "$(pwd)/CoTRA_results:/results" \
+  cotra:local
+```
+
+Check its status:
+
+```bash
+docker ps
+```
+
+View logs:
+
+```bash
+docker logs cotra
+```
+
+---
+
+## 11. Reproducibility and versioning
+
+The Dockerfile pins the base R version:
+
+```text
+R 4.5.2
+```
+
+A built container image preserves the exact packages installed in that image. For reproducible releases, use versioned image tags rather than relying only on `latest`.
+
+Example:
+
+```text
+ghcr.io/umairseemab/cotra:v0.1.0
+```
+
+The repository does not currently contain a complete `renv.lock` for every CoTRA dependency. Therefore, rebuilding the Dockerfile at a later date can still pick up newer package versions from CRAN, Bioconductor, or GitHub even though the R base version is fixed.
+
+For strict source-level reproducibility, add a tested lockfile or pin individual dependency versions/commits in a future release. The published versioned container image itself remains the most direct record of the tested software environment.
+
+---
+
+## 12. Apptainer for HPC systems
+
+The same OCI image can be used on HPC systems that provide Apptainer.
+
+Pull the image:
+
+```bash
+apptainer pull CoTRA.sif docker://ghcr.io/umairseemab/cotra:latest
+```
+
+Create host folders:
+
+```bash
+mkdir -p CoTRA_data CoTRA_results
+```
+
+Run with persistent mounts:
+
+```bash
+apptainer run \
+  --bind "$PWD/CoTRA_data:/data" \
+  --bind "$PWD/CoTRA_results:/results" \
+  CoTRA.sif
+```
+
+For a remote HPC compute node, you may also need SSH tunnelling or the site-specific method for exposing port `3838` to your browser.
+
+### Example SLURM job
+
+```bash
+#!/bin/bash
+#SBATCH --time=04:00:00
+#SBATCH --mem=32G
+#SBATCH --cpus-per-task=8
+
+module load apptainer
+
+mkdir -p CoTRA_data CoTRA_results
+
+apptainer run \
+  --bind "$PWD/CoTRA_data:/data" \
+  --bind "$PWD/CoTRA_results:/results" \
+  CoTRA.sif
+```
+
+For CSC/Roihu, use the Apptainer module and storage paths appropriate for your CSC project and follow CSC's current port-forwarding guidance for interactive web applications.
+
+---
+
+# Native R installation
+
+Container installation is recommended for users who want a predefined environment. Native installation remains available for developers and users who prefer direct R/RStudio access.
+
+## Requirements
+
+CoTRA currently declares:
+
+```text
+R >= 4.4.0
+```
+
+Install CoTRA from GitHub:
 
 ```r
 install.packages("remotes")
-remotes::install_github("UmairSeemab/CoTRA", dependencies = TRUE)
+remotes::install_github(
+  "UmairSeemab/CoTRA",
+  dependencies = TRUE,
+  upgrade = "never"
+)
 ```
 
-## Install required analysis dependencies
+Install the analysis dependency stack:
 
 ```r
 library(CoTRA)
-CoTRA::install_cotra_dependencies()
+CoTRA::install_cotra_dependencies(ask = FALSE)
 ```
 
-## Run CoTRA
+For 10x Genomics HDF5 input, ensure `hdf5r` is installed:
+
+```r
+install.packages("hdf5r")
+```
+
+Run CoTRA:
 
 ```r
 library(CoTRA)
 CoTRA::runCoTRA()
 ```
 
-`runCoTRA()` creates a temporary writable copy of the Shiny app. This avoids writing output files inside the installed R package library.
+`runCoTRA()` creates a temporary writable copy of the Shiny application so CoTRA does not write generated output inside the installed R package directory.
 
-## Install CoTRA without Admin rights
-You can install CoTRA on your workstation (University, work-place) without having admin rights by following setup. Just copy it all and run all together.
+---
+
+## Existing native installation helper files
+
+The repository also contains:
+
+```text
+install_cotra_packages.R
+install_CoTRA_Windows.bat
+install_CoTRA_MacOS.command
+install_CoTRA_Linux.sh
+```
+
+These are native R installation helpers. They are separate from the Docker launchers under `launchers/`.
+
+Use the container launchers when you want to avoid installing the R dependency stack on the host computer.
+
+---
+
+## Native installation without administrator rights on Windows
+
+A user-writable R library can be used when administrator rights are unavailable.
+
+Example:
 
 ```r
-# ============================================================
-# CoTRA - Windows Installation WITHOUT Administrator Rights
-# ============================================================
-#
-# Run this entire script once in R or RStudio.
-#
-# It will:
-#   - Create a personal R package library
-#   - Save that library permanently using R_LIBS_USER
-#   - Install required installation packages
-#   - Install CoTRA and its dependencies
-#
-# Administrator rights are NOT required.
-#
-# CoTRA:
-# https://github.com/UmairSeemab/CoTRA
-# ============================================================
-
-
-# ------------------------------------------------------------
-# 1. Check Windows
-# ------------------------------------------------------------
-
-if (.Platform$OS.type != "windows") {
-  stop(
-    "This installation script is intended for Windows computers."
-  )
-}
-
-
-# ------------------------------------------------------------
-# 2. R version
-# ------------------------------------------------------------
-
 r_version <- paste0(
   R.version$major,
   ".",
   strsplit(R.version$minor, "\\.")[[1]][1]
 )
 
-cat("\nR version:\n")
-cat(R.version.string, "\n")
-
-
-# ------------------------------------------------------------
-# 3. Create personal R library
-# ------------------------------------------------------------
-
 local_appdata <- Sys.getenv("LOCALAPPDATA")
-
 if (!nzchar(local_appdata)) {
   local_appdata <- path.expand("~")
 }
@@ -93,897 +513,45 @@ user_lib <- file.path(
   r_version
 )
 
-user_lib <- gsub(
-  "\\\\",
-  "/",
-  user_lib
-)
+dir.create(user_lib, recursive = TRUE, showWarnings = FALSE)
 
-cat("\nPersonal R library:\n")
-cat(user_lib, "\n")
-
-
-if (!dir.exists(user_lib)) {
-
-  cat("\nCreating personal R library...\n")
-
-  dir.create(
-    user_lib,
-    recursive = TRUE,
-    showWarnings = FALSE
-  )
-}
-
-
-if (!dir.exists(user_lib)) {
-
-  stop(
-    "\nERROR: Could not create personal R library:\n",
-    user_lib,
-    "\n\nCheck that your Windows user account can write ",
-    "to its AppData directory."
-  )
-}
-
-
-# ------------------------------------------------------------
-# 4. Permanently set R_LIBS_USER
-# ------------------------------------------------------------
-
-user_home <- path.expand("~")
-
-renviron_file <- file.path(
-  user_home,
-  ".Renviron"
-)
-
-renviron_file <- gsub(
-  "\\\\",
-  "/",
-  renviron_file
-)
-
-
-cat("\nConfiguring permanent R library...\n")
-cat(".Renviron location:\n")
-cat(renviron_file, "\n")
-
-
-if (file.exists(renviron_file)) {
-
-  renviron_lines <- readLines(
-    renviron_file,
-    warn = FALSE
-  )
-
-} else {
-
-  renviron_lines <- character(0)
-}
-
-
-# Remove any existing R_LIBS_USER entry
-renviron_lines <- renviron_lines[
-  !grepl(
-    "^\\s*R_LIBS_USER\\s*=",
-    renviron_lines
-  )
-]
-
-
-# Add permanent personal library
-renviron_lines <- c(
-  renviron_lines,
-  paste0(
-    'R_LIBS_USER="',
-    user_lib,
-    '"'
-  )
-)
-
-
-writeLines(
-  renviron_lines,
-  renviron_file
-)
-
-
-# ------------------------------------------------------------
-# 5. Activate library NOW
-# ------------------------------------------------------------
-
-Sys.setenv(
-  R_LIBS_USER = user_lib
-)
-
-.libPaths(
-  unique(
-    c(
-      user_lib,
-      .libPaths()
-    )
-  )
-)
-
-
-cat("\nCurrent R library paths:\n")
-
-for (x in .libPaths()) {
-  cat("  ", x, "\n")
-}
-
-
-# ------------------------------------------------------------
-# 6. Confirm that library is writable
-# ------------------------------------------------------------
-
-test_file <- file.path(
-  user_lib,
-  "CoTRA_write_test.txt"
-)
-
-
-write_ok <- tryCatch({
-
-  writeLines(
-    "CoTRA write test",
-    test_file
-  )
-
-  unlink(test_file)
-
-  TRUE
-
-}, error = function(e) {
-
-  FALSE
-
-})
-
-
-if (!write_ok) {
-
-  stop(
-    "\nERROR: R cannot write to:\n",
-    user_lib,
-    "\n\nInstallation cannot continue."
-  )
-}
-
-
-cat("\n[OK] Personal R library is writable.\n")
-
-
-# ------------------------------------------------------------
-# 7. General R installation settings
-# ------------------------------------------------------------
-
-options(
-  repos = c(
-    CRAN = "https://cloud.r-project.org"
-  )
-)
-
-options(
-  timeout = 2000
-)
-
-options(
-  Ncpus = max(
-    1,
-    parallel::detectCores(logical = TRUE) - 1
-  )
-)
-
-
-# ------------------------------------------------------------
-# 8. Function for installing required CRAN packages
-# ------------------------------------------------------------
-
-install_required_cran <- function(pkg) {
-
-  if (requireNamespace(
-    pkg,
-    quietly = TRUE
-  )) {
-
-    cat(
-      "[OK]",
-      pkg,
-      "already installed:",
-      as.character(packageVersion(pkg)),
-      "\n"
-    )
-
-    return(invisible(TRUE))
-  }
-
-
-  cat(
-    "\nInstalling required package:",
-    pkg,
-    "\n"
-  )
-
-
-  # Prefer Windows binary packages.
-  # This avoids compilation when a binary is available.
-  tryCatch({
-
-    install.packages(
-      pkg,
-      lib = user_lib,
-      repos = "https://cloud.r-project.org",
-      type = "binary",
-      dependencies = c(
-        "Depends",
-        "Imports",
-        "LinkingTo"
-      )
-    )
-
-  }, error = function(e) {
-
-    cat(
-      "\nInstallation error for",
-      pkg,
-      ":\n",
-      conditionMessage(e),
-      "\n"
-    )
-  })
-
-
-  if (!requireNamespace(
-    pkg,
-    quietly = TRUE
-  )) {
-
-    stop(
-      "\nERROR: Required package '",
-      pkg,
-      "' could not be installed.\n\n",
-      "CoTRA installation cannot continue."
-    )
-  }
-
-
-  cat(
-    "[OK]",
-    pkg,
-    "installed:",
-    as.character(packageVersion(pkg)),
-    "\n"
-  )
-}
-
-
-# ------------------------------------------------------------
-# 9. Install BiocManager
-# ------------------------------------------------------------
-
-cat(
-  "\n============================================================\n"
-)
-cat(
-  "Installing required installation packages\n"
-)
-cat(
-  "============================================================\n\n"
-)
-
-
-install_required_cran(
-  "BiocManager"
-)
-
-
-# ------------------------------------------------------------
-# 10. Configure CRAN + Bioconductor repositories
-# ------------------------------------------------------------
-
-options(
-  repos = BiocManager::repositories()
-)
-
-
-cat("\nBioconductor version detected:\n")
-cat(
-  as.character(
-    BiocManager::version()
-  ),
-  "\n"
-)
-
-
-# ------------------------------------------------------------
-# 11. Install remotes
-# ------------------------------------------------------------
-
-install_required_cran(
-  "remotes"
-)
-
-
-# ------------------------------------------------------------
-# 12. Install hdf5r explicitly
-# ------------------------------------------------------------
-#
-# IMPORTANT:
-# Seurat::Read10X_h5() requires hdf5r.
-#
-# CoTRA needs this package for:
-#   10x Genomics HDF5 (.h5) input
-#
-# ------------------------------------------------------------
-
-cat(
-  "\n============================================================\n"
-)
-cat(
-  "Installing HDF5 support for 10x Genomics .h5 files\n"
-)
-cat(
-  "============================================================\n\n"
-)
-
-
-install_required_cran(
-  "hdf5r"
-)
-
-
-# ------------------------------------------------------------
-# 13. Verify hdf5r before installing CoTRA
-# ------------------------------------------------------------
-
-if (!requireNamespace(
-  "hdf5r",
-  quietly = TRUE
-)) {
-
-  stop(
-    "\nERROR: hdf5r is unavailable.\n",
-    "10x Genomics HDF5 (.h5) files cannot be imported.\n"
-  )
-}
-
-
-cat(
-  "\n[OK] hdf5r version: ",
-  as.character(
-    packageVersion("hdf5r")
-  ),
-  "\n",
-  sep = ""
-)
-
-
-cat(
-  "[OK] hdf5r location: ",
-  find.package("hdf5r"),
-  "\n",
-  sep = ""
-)
-
-
-# ------------------------------------------------------------
-# 14. Install CoTRA
-# ------------------------------------------------------------
-
-cat(
-  "\n============================================================\n"
-)
-
-cat(
-  "Installing CoTRA and dependencies\n"
-)
-
-cat(
-  "============================================================\n\n"
-)
-
-
-tryCatch({
-
-  remotes::install_github(
-    "UmairSeemab/CoTRA",
-    lib = user_lib,
-    dependencies = TRUE,
-    upgrade = "never",
-    build_vignettes = FALSE,
-    force = TRUE
-  )
-
-}, error = function(e) {
-
-  stop(
-    "\nCoTRA installation failed.\n\n",
-    conditionMessage(e)
-  )
-})
-
-
-# ------------------------------------------------------------
-# 15. Verify CoTRA
-# ------------------------------------------------------------
-
-cat(
-  "\n============================================================\n"
-)
-
-cat(
-  "Verifying CoTRA installation\n"
-)
-
-cat(
-  "============================================================\n\n"
-)
-
-
-required_checks <- c(
-  "CoTRA",
-  "Seurat",
-  "hdf5r"
-)
-
-
-check_results <- sapply(
-  required_checks,
-  function(pkg) {
-
-    requireNamespace(
-      pkg,
-      quietly = TRUE
-    )
-
-  }
-)
-
-
-for (pkg in required_checks) {
-
-  if (check_results[[pkg]]) {
-
-    cat(
-      "[OK] ",
-      pkg,
-      " ",
-      as.character(
-        packageVersion(pkg)
-      ),
-      "\n",
-      sep = ""
-    )
-
-  } else {
-
-    cat(
-      "[MISSING] ",
-      pkg,
-      "\n",
-      sep = ""
-    )
-  }
-}
-
-
-if (!all(check_results)) {
-
-  missing_packages <- names(
-    check_results
-  )[!check_results]
-
-
-  stop(
-    "\nInstallation is incomplete.\n\n",
-    "Missing package(s): ",
-    paste(
-      missing_packages,
-      collapse = ", "
-    ),
-    "\n"
-  )
-}
-
-
-# ------------------------------------------------------------
-# 16. Verify Seurat H5 functionality
-# ------------------------------------------------------------
-
-cat(
-  "\nChecking 10x HDF5 support...\n"
-)
-
-
-if (!exists(
-  "Read10X_h5",
-  envir = asNamespace("Seurat"),
-  inherits = FALSE
-)) {
-
-  stop(
-    "\nERROR: Seurat::Read10X_h5() is unavailable."
-  )
-}
-
-
-if (!requireNamespace(
-  "hdf5r",
-  quietly = TRUE
-)) {
-
-  stop(
-    "\nERROR: hdf5r is unavailable."
-  )
-}
-
-
-cat(
-  "[OK] Seurat::Read10X_h5() is available.\n"
-)
-
-cat(
-  "[OK] hdf5r is available.\n"
-)
-
-cat(
-  "[OK] CoTRA is ready for 10x Genomics HDF5 (.h5) files.\n"
-)
-
-
-# ------------------------------------------------------------
-# 17. Show installation locations
-# ------------------------------------------------------------
-
-cat(
-  "\nInstalled package locations:\n\n"
-)
-
-
-cat(
-  "CoTRA:\n",
-  find.package("CoTRA"),
-  "\n\n",
-  sep = ""
-)
-
-
-cat(
-  "Seurat:\n",
-  find.package("Seurat"),
-  "\n\n",
-  sep = ""
-)
-
-
-cat(
-  "hdf5r:\n",
-  find.package("hdf5r"),
-  "\n\n",
-  sep = ""
-)
-
-
-# ------------------------------------------------------------
-# 18. Final message
-# ------------------------------------------------------------
-
-cat(
-  "\n",
-  "============================================================\n",
-  "             CoTRA INSTALLATION COMPLETE\n",
-  "============================================================\n\n",
-  "Administrator rights were NOT required.\n\n",
-  "Personal R library:\n",
-  user_lib,
-  "\n\n",
-  "The library path has been permanently saved in:\n",
-  renviron_file,
-  "\n\n",
-  "10x Genomics HDF5 (.h5) support:\n",
-  "AVAILABLE\n\n",
-  "Restart R or RStudio once.\n\n",
-  "Then start CoTRA using:\n\n",
-  "    library(CoTRA)\n",
-  "    runCoTRA()\n\n",
-  "You do NOT need to run this installation script again.\n\n",
-  "============================================================\n",
-  sep = ""
-)
-```
-
-## Platform notes
-
-Windows, Ubuntu, and macOS users can install the package with the same R commands above.
-
-External command-line tools such as FastQC, STAR, HTSeq, MultiQC, and Chrome or Chromium for PDF reports must be installed separately when those workflows are used.
-
-## Bioconductor preparation
-
-This package keeps reusable R functions under `R/` and the Shiny app under `inst/app/`. This layout is compatible with later Bioconductor preparation. Before Bioconductor submission, run:
-
-```r
-devtools::check()
-BiocCheck::BiocCheck()
-```
-## Cloud computer installation (CSC)
-
-Copy the whole panel and paste it in console to run all together. Use your own project number if needed in configuration section.
-```r
-# ============================================================
-# Generic CoTRA installer for CSC Roihu
-# Automatically detects the active R and Bioconductor versions
-# ============================================================
-
-
-# ------------------------------------------------------------
-# 1. Configuration
-# ------------------------------------------------------------
-
-project_directory <- "/projappl/project_2007629"  # Use your own project number if needed.
-
-r_major_minor <- paste(
-  R.version$major,
-  strsplit(R.version$minor, ".", fixed = TRUE)[[1]][1],
-  sep = "."
-)
-
-libpath <- file.path(
-  project_directory,
-  paste0("CoTRA_Rlibs_R", r_major_minor)
-)
-
-
-# ------------------------------------------------------------
-# 2. Create and activate the version-specific library
-# ------------------------------------------------------------
-
-dir.create(
-  libpath,
-  recursive = TRUE,
-  showWarnings = FALSE
-)
-
-.libPaths(
-  unique(c(libpath, .libPaths()))
-)
-
-Sys.setenv(
-  R_LIBS_USER = libpath
-)
-
-cat("R version:\n")
-print(R.version.string)
-
-cat("\nCoTRA library:\n")
-print(libpath)
-
-cat("\nActive R library paths:\n")
-print(.libPaths())
-
-
-# ------------------------------------------------------------
-# 3. Configure CRAN
-# ------------------------------------------------------------
+Sys.setenv(R_LIBS_USER = user_lib)
+.libPaths(unique(c(user_lib, .libPaths())))
 
 options(
   repos = c(CRAN = "https://cloud.r-project.org"),
   timeout = 2000
 )
 
-
-# ------------------------------------------------------------
-# 4. Install basic installation tools
-# ------------------------------------------------------------
-
-installation_tools <- c(
-  "BiocManager",
-  "remotes"
+install.packages(
+  c("BiocManager", "remotes", "hdf5r"),
+  lib = user_lib,
+  dependencies = TRUE
 )
-
-missing_tools <- installation_tools[
-  !vapply(
-    installation_tools,
-    requireNamespace,
-    logical(1),
-    quietly = TRUE
-  )
-]
-
-if (length(missing_tools) > 0) {
-  install.packages(
-    missing_tools,
-    lib = libpath,
-    dependencies = TRUE,
-    type = "source"
-  )
-}
-
-
-# ------------------------------------------------------------
-# 5. Configure the matching Bioconductor version
-# ------------------------------------------------------------
-
-bioconductor_version <- as.character(
-  BiocManager::version()
-)
-
-options(
-  repos = BiocManager::repositories()
-)
-
-cat("\nBioconductor version:\n")
-print(bioconductor_version)
-
-
-# ------------------------------------------------------------
-# 6. Remove locks from previous failed installations
-# ------------------------------------------------------------
-
-lock_directories <- list.files(
-  libpath,
-  pattern = "^00LOCK",
-  full.names = TRUE
-)
-
-if (length(lock_directories) > 0) {
-  unlink(
-    lock_directories,
-    recursive = TRUE,
-    force = TRUE
-  )
-}
-
-
-# ------------------------------------------------------------
-# 7. Check and repair websocket
-# ------------------------------------------------------------
-
-websocket_works <- tryCatch(
-  requireNamespace("websocket", quietly = TRUE),
-  error = function(e) FALSE
-)
-
-if (!websocket_works) {
-
-  installed_local <- rownames(
-    installed.packages(lib.loc = libpath)
-  )
-
-  packages_to_remove <- intersect(
-    c("websocket", "webshot2"),
-    installed_local
-  )
-
-  for (pkg in packages_to_remove) {
-    try(
-      remove.packages(
-        pkg,
-        lib = libpath
-      ),
-      silent = TRUE
-    )
-  }
-
-  install.packages(
-    "websocket",
-    lib = libpath,
-    dependencies = TRUE,
-    type = "source"
-  )
-}
-
-if (!requireNamespace("websocket", quietly = TRUE)) {
-  stop(
-    "The websocket package could not be loaded. ",
-    "Restart RStudio and run this script again."
-  )
-}
-
-
-# ------------------------------------------------------------
-# 8. Install webshot2
-# ------------------------------------------------------------
-
-webshot2_works <- tryCatch(
-  requireNamespace("webshot2", quietly = TRUE),
-  error = function(e) FALSE
-)
-
-if (!webshot2_works) {
-  install.packages(
-    "webshot2",
-    lib = libpath,
-    dependencies = TRUE,
-    type = "source"
-  )
-}
-
-if (!requireNamespace("webshot2", quietly = TRUE)) {
-  stop("The webshot2 package could not be installed or loaded.")
-}
-
-
-# ------------------------------------------------------------
-# 9. Install ReactomePA
-# ------------------------------------------------------------
-
-reactome_works <- tryCatch(
-  requireNamespace("ReactomePA", quietly = TRUE),
-  error = function(e) FALSE
-)
-
-if (!reactome_works) {
-  BiocManager::install(
-    "ReactomePA",
-    lib = libpath,
-    ask = FALSE,
-    update = FALSE,
-    force = TRUE
-  )
-}
-
-if (!requireNamespace("ReactomePA", quietly = TRUE)) {
-  stop("The ReactomePA package could not be installed or loaded.")
-}
-
-
-# ------------------------------------------------------------
-# 10. Install CoTRA
-# ------------------------------------------------------------
 
 remotes::install_github(
   "UmairSeemab/CoTRA",
-  dependencies = c(
-    "Depends",
-    "Imports",
-    "LinkingTo"
-  ),
+  lib = user_lib,
+  dependencies = TRUE,
   upgrade = "never",
-  force = TRUE,
-  lib = libpath
+  force = TRUE
 )
 
-
-# ------------------------------------------------------------
-# 11. Verify the installation
-# ------------------------------------------------------------
-
-library(
-  CoTRA,
-  lib.loc = libpath
-)
-
-cat("\n============================================\n")
-cat("CoTRA installed successfully\n")
-cat("============================================\n")
-
-cat("\nR version:\n")
-print(R.version.string)
-
-cat("\nBioconductor version:\n")
-print(BiocManager::version())
-
-cat("\nCoTRA version:\n")
-print(packageVersion("CoTRA"))
-
-cat("\nCoTRA installation directory:\n")
-print(find.package("CoTRA"))
-
-cat("\nRestart the RStudio session before running CoTRA.\n")
+library(CoTRA, lib.loc = user_lib)
+CoTRA::install_cotra_dependencies(ask = FALSE)
+CoTRA::runCoTRA()
 ```
 
-## To Run CoTRA at CSC
+If compiled packages require system libraries or build tools, the container installation is preferable because those system dependencies are installed inside the image.
 
-Copy the whole panel and paste it and run it all together. Change the project number and put it your own number if needed. 
+---
+
+## Native installation on CSC/Roihu
+
+If you prefer a native R library instead of Apptainer, create a project-specific library tied to the active R major/minor version.
 
 ```r
-# ============================================================
-# Generic CoTRA launcher for CSC Roihu
-# ============================================================
-
-project_directory <- "/projappl/project_2007629"  # this project number is not standard for every user
+project_directory <- "/projappl/project_XXXXXXX"
 
 r_major_minor <- paste(
   R.version$major,
@@ -996,36 +564,145 @@ libpath <- file.path(
   paste0("CoTRA_Rlibs_R", r_major_minor)
 )
 
-if (!dir.exists(libpath)) {
-  stop(
-    "No CoTRA library was found for R ",
-    r_major_minor,
-    " at:\n",
-    libpath,
-    "\nRun the CoTRA installation script first."
-  )
-}
+dir.create(libpath, recursive = TRUE, showWarnings = FALSE)
+.libPaths(unique(c(libpath, .libPaths())))
+Sys.setenv(R_LIBS_USER = libpath)
 
-.libPaths(
-  unique(c(libpath, .libPaths()))
+options(
+  repos = c(CRAN = "https://cloud.r-project.org"),
+  timeout = 2000
 )
 
-Sys.setenv(
-  R_LIBS_USER = libpath
+install.packages(
+  c("BiocManager", "remotes", "hdf5r"),
+  lib = libpath,
+  dependencies = TRUE
 )
 
-library(
-  CoTRA,
-  lib.loc = libpath
+remotes::install_github(
+  "UmairSeemab/CoTRA",
+  dependencies = TRUE,
+  upgrade = "never",
+  force = TRUE,
+  lib = libpath
 )
 
-cat("R version: ", R.version.string, "\n")
-cat("CoTRA version: ", as.character(packageVersion("CoTRA")), "\n")
-cat("Loaded from: ", find.package("CoTRA"), "\n")
+library(CoTRA, lib.loc = libpath)
+CoTRA::install_cotra_dependencies(ask = FALSE)
+```
 
+Run later with:
+
+```r
+project_directory <- "/projappl/project_XXXXXXX"
+
+r_major_minor <- paste(
+  R.version$major,
+  strsplit(R.version$minor, ".", fixed = TRUE)[[1]][1],
+  sep = "."
+)
+
+libpath <- file.path(
+  project_directory,
+  paste0("CoTRA_Rlibs_R", r_major_minor)
+)
+
+.libPaths(unique(c(libpath, .libPaths())))
+Sys.setenv(R_LIBS_USER = libpath)
+
+library(CoTRA, lib.loc = libpath)
 CoTRA::runCoTRA()
 ```
 
-## Output folder
+Replace `project_XXXXXXX` with your CSC project directory.
 
-After launching CoTRA, open the Home page and select an output folder. CoTRA saves generated reports, figures, CSV tables, ZIP files, and session files into this user-selected folder. If no folder is selected, CoTRA uses `~/CoTRA_Results`.
+---
+
+# Output folder
+
+For a native installation, open the CoTRA Home page and select an output folder. CoTRA stores generated reports, figures, tables, ZIP files, and session files in that directory.
+
+If no output folder is selected, native CoTRA uses:
+
+```text
+~/CoTRA_Results
+```
+
+For the supplied Docker container, this default is mapped into the persistent host `CoTRA_results` directory as described above.
+
+---
+
+# Bioconductor preparation
+
+CoTRA keeps reusable package functions under `R/` and the Shiny application under `inst/app/`.
+
+Before a Bioconductor-oriented package submission, run the appropriate package checks, for example:
+
+```r
+devtools::check()
+BiocCheck::BiocCheck()
+```
+
+---
+
+# Container troubleshooting
+
+## Port 3838 is already in use
+
+Run on another host port:
+
+```bash
+docker run --rm --name cotra \
+  -p 3839:3838 \
+  ghcr.io/umairseemab/cotra:latest
+```
+
+Then open:
+
+```text
+http://localhost:3839
+```
+
+## View container logs
+
+```bash
+docker logs cotra
+```
+
+## Check container health
+
+```bash
+docker inspect --format '{{.State.Health.Status}}' cotra
+```
+
+## Remove an old container
+
+```bash
+docker rm -f cotra
+```
+
+## Refresh the image
+
+```bash
+docker pull ghcr.io/umairseemab/cotra:latest
+```
+
+## Browser-based report rendering
+
+The image includes Pandoc, but it does not currently install Google Chrome or Chromium. If a report path specifically requires `webshot2`, `pagedown`, or another headless-Chrome operation, validate that workflow separately before treating browser-based PDF capture as supported across both AMD64 and ARM64 images.
+
+---
+
+# Development notes
+
+The Dockerfile installs dependencies before launching the application and fails the image build if the dependency verification step reports missing declared CoTRA dependencies. This moves most package installation failures from the end user's computer into CI, where they can be fixed once for all users.
+
+When changing CoTRA dependencies:
+
+1. Update `DESCRIPTION` where appropriate.
+2. Update `R/dependencies.R`.
+3. Rebuild the container.
+4. Check the GitHub Actions build for both architectures.
+5. Test representative bulk RNA-seq and scRNA-seq workflows.
+6. Publish a versioned container tag for a release.
+
