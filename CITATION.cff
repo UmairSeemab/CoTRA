@@ -6,19 +6,21 @@ authors:
   - family-names: "Seemab"
     given-names: "Umair"
     email: "u.seemab@gmail.com"
-version: "1.0.0"
-date-released: 2026-09-07
-commit: "ee49510"
+version: "1.1.0"
+date-released: 2026-09-21
 repository-code: "https://github.com/UmairSeemab/CoTRA"
-repository-artifact: "https://github.com/UmairSeemab/CoTRA/releases/tag/v1.0.0"
+repository-artifact: "https://github.com/UmairSeemab/CoTRA/releases/tag/v1.1.0"
 url: "https://github.com/UmairSeemab/CoTRA"
 license: "GPL-3.0-only"
 abstract: >-
-  CoTRA is an R/Shiny framework for bulk RNA-seq and single-cell RNA-seq
-  analysis. It provides workflows for data upload, quality control,
-  differential expression, functional enrichment, dimensionality reduction,
-  clustering, annotation, trajectory analysis, pathway activity analysis,
-  differential abundance, cell-cell communication, and report generation.
+  CoTRA is an open-source R/Shiny framework for downstream bulk RNA-seq and
+  single-cell RNA-seq analysis. It provides workflows for data import,
+  quality control, differential expression, functional enrichment,
+  dimensionality reduction, clustering, cell-type annotation, trajectory
+  inference, pathway activity analysis, differential abundance,
+  cell-cell communication, and report generation. CoTRA supports native
+  installation and containerized deployment using Docker to facilitate
+  reproducible execution across computing environments.
 keywords:
   - "RNA-seq"
   - "single-cell RNA-seq"
@@ -27,3 +29,6 @@ keywords:
   - "bioinformatics"
   - "R"
   - "Shiny"
+  - "Docker"
+  - "reproducible research"
+  - "containerization"
