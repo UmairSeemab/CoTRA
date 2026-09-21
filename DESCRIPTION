@@ -1,9 +1,15 @@
 Package: CoTRA
 Type: Package
 Title: Comprehensive Toolbox for RNA Sequencing Data Analysis
-Version: 0.1.0
+Version: 1.1.0
 Authors@R: person("Umair", "Seemab", email = "u.seemab@gmail.com", role = c("aut", "cre"))
-Description: Provides a Shiny graphical interface for bulk RNA-seq and single-cell RNA-seq analysis. CoTRA integrates data upload, quality control, differential expression, enrichment, annotation, clustering, trajectory analysis, and report generation workflows.
+Description: Provides a Shiny graphical interface for downstream bulk RNA-seq and
+    single-cell RNA-seq analysis. CoTRA integrates data upload, quality control,
+    differential expression, enrichment, annotation, dimensionality reduction,
+    clustering, trajectory analysis, pathway activity analysis, cell-cell
+    communication, and report generation workflows. Native installation is
+    supported together with containerized deployment using Docker and compatible
+    container runtimes.
 License: GPL-3
 URL: https://github.com/UmairSeemab/CoTRA
 BugReports: https://github.com/UmairSeemab/CoTRA/issues
